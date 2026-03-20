@@ -1,0 +1,36 @@
+---
+import PortableText from "../../components/PortableText.astro";
+import { loadQuery } from "../../sanity/lib/load-query";
+import { urlForImage } from "../../sanity/lib/url-for-images";
+export async function getStaticPaths() {
+  const { data: posts } = await loadQuery({
+    query: `*[_type == "post"]`,
+  });
+  const a = await Promise.all(
+    posts.map(async (post) => {
+      const { data } = await loadQuery({
+        query: `*[_type == "post" && slug.current == $slug][0]`,
+        params: {
+          slug: post.slug.current,
+        },
+      });
+
+      return {
+        params: {
+          slug: post.slug.current,
+        },
+        props: {
+          post: data,
+        },
+      };
+    }),
+  );
+  return a;
+}
+const { params, props } = Astro;
+const imgUrl = urlForImage(props.post.mainImage).width(600).url();
+---
+
+<img src={imgUrl} alt={props.post.title} />
+<h1>A post about {props.post.title}</h1>
+<PortableText portableText={props.post.body} />

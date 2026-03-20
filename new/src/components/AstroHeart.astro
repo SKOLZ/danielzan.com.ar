@@ -1,0 +1,27 @@
+<astro-heart>
+  <button aria-label="Heart">💜</button> × <span>0</span>
+</astro-heart>
+
+<script>
+  class AstroHeart extends HTMLElement {
+    connectedCallback() {
+      let count = 0;
+
+      const heartButton = this.querySelector("button");
+      const countSpan = this.querySelector("span");
+
+      if (!heartButton || !countSpan) {
+        console.error("AstroHeart component is missing required elements.");
+        return;
+      }
+
+      // Each time the button is clicked, update the count.
+      heartButton.addEventListener("click", () => {
+        count++;
+        countSpan.textContent = count.toString();
+      });
+    }
+  }
+
+  customElements.define("astro-heart", AstroHeart);
+</script>
