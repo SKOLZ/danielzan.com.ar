@@ -1,23 +1,53 @@
-html {
-  background-color: #f1f5f9;
-  font-family: sans-serif;
+@import "./reset.css";
+@import "./typography.css";
+
+:root {
+  --black: #000;
+  --white: #fff;
+  --black-1000: #0d0d0d;
+  --black-950: #121212;
+  --black-900: #171717;
+  --black-850: #1d1d1d;
+  --black-800: #232323;
+  --black-750: #292929;
+  --black-700: #303030;
+  --black-650: #373737;
+  --black-600: #3f3f3f;
+  --black-550: #474747;
+  --black-500: #505050;
+  --black-450: #595959;
+  --black-400: #636363;
+  --black-350: #6e6e6e;
+  --black-300: #7a7a7a;
+  --black-250: #878787;
+  --black-200: #959595;
+  --black-175: #a3a3a3;
+  --black-150: #b2b2b2;
+  --black-100: #c2c2c2;
+  --black-50: #d3d3d3;
+  --black-25: #e5e5e5;
+  --black-0: #fafafa;
 }
 
 body {
+  background-color: var(--black);
+  padding: 32px 32px 16px;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  &::selection {
+    background-color: var(--black-800);
+    color: var(--black-0);
+  }
+}
+
+.container {
+  max-width: 1280px;
   margin: 0 auto;
+  padding-inline: 20px;
   width: 100%;
-  max-width: 80ch;
-  padding: 1rem;
-  line-height: 1.5;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-h1 {
-  margin: 1rem 0;
-  font-size: 2.5rem;
 }
 
 /* nav styles */

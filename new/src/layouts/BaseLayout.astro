@@ -1,6 +1,7 @@
 ---
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
+import { Font } from "astro:assets";
 import "../styles/global.css";
 const { pageTitle } = Astro.props;
 ---
@@ -11,15 +12,84 @@ const { pageTitle } = Astro.props;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
+    <Font preload cssVariable="--font-bebas-neue" />
+    <Font preload cssVariable="--font-zodiak" />
     <title>{pageTitle}</title>
   </head>
   <body>
     <Header />
-    <h1>{pageTitle}</h1>
-    <slot />
+    <main class="main container">
+      <slot />
+    </main>
     <Footer />
     <script>
       import "../scripts/menu.js";
     </script>
   </body>
 </html>
+
+<style>
+  @property --_scroll-shadow-color-1-opacity {
+    syntax: "<percentage>";
+    inherits: false;
+    initial-value: 0%;
+  }
+
+  @property --_scroll-shadow-color-2-opacity {
+    syntax: "<percentage>";
+    inherits: false;
+    initial-value: 0%;
+  }
+
+  .main {
+    background-color: var(--black-1000);
+    border: 1px solid var(--black-950);
+    border-radius: 4px;
+    max-width: 1240px;
+    flex: 1;
+    padding: 0;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--black-800) transparent;
+    position: relative;
+    container-type: scroll-state size;
+    display: grid;
+    overflow-x: clip;
+
+    &::after {
+      content: " ";
+      grid-area: 1/1;
+      display: block;
+      position: sticky;
+      top: 0;
+      height: 100cqh;
+      width: 100cqw;
+      pointer-events: none;
+      background: linear-gradient(
+        to bottom,
+        rgb(
+            from var(--black-1000) r g b / var(--_scroll-shadow-color-1-opacity)
+          )
+          0,
+        transparent 20px,
+        transparent calc(100cqh - 20px),
+        rgb(
+          from var(--black-1000) r g b / var(--_scroll-shadow-color-2-opacity)
+        )
+      );
+
+      @container scroll-state(scrollable: top) {
+        --_scroll-shadow-color-1-opacity: var(--_shadow-color-opacity, 100%);
+      }
+
+      @container scroll-state(scrollable: bottom) {
+        --_scroll-shadow-color-2-opacity: var(--_shadow-color-opacity, 100%);
+      }
+    }
+
+    > * {
+      grid-area: 1/1;
+    }
+  }
+</style>

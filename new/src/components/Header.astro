@@ -1,22 +1,95 @@
 ---
-import Menu from "./Menu.astro";
-import Navigation from "./Navigation.astro";
-import ThemeIcon from "./ThemeIcon.astro";
+import cn from "classnames";
+
+const pathname = new URL(Astro.request.url).pathname;
+const currentPath = pathname.slice(1);
 ---
 
-<header>
-  <nav>
-    <div>
-      <ThemeIcon />
-      <Menu />
-    </div>
-    <Navigation />
+<header class="container header">
+  <a class="logo" href="/">Danielzan</a>
+  <nav class="nav">
+    <a class={cn("nav-link", currentPath === "" ? "active" : "")} href="/">
+      Notas
+    </a>
+    <a
+      class={cn("nav-link", currentPath === "mi-historia" ? "active" : "")}
+      href="/mi-historia"
+    >
+      Mi historia
+    </a>
+    <a
+      class={cn("nav-link", currentPath === "resultados" ? "active" : "")}
+      href="/resultados"
+    >
+      Resultados
+    </a>
   </nav>
 </header>
 
 <style>
-  div {
+  .header {
     display: flex;
     justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .logo {
+    font-family: var(--font-bebas-neue);
+    font-size: 4rem;
+    font-weight: 400;
+    color: var(--black-0);
+    text-transform: uppercase;
+    text-box-trim: trim-both;
+    text-box-edge: cap alphabetic;
+  }
+
+  .nav {
+    display: flex;
+
+    &:not(:has(.nav-link:hover)) .nav-link.active {
+      anchor-name: --h;
+    }
+
+    &::before {
+      content: "";
+      position-anchor: --h;
+      left: calc(anchor(left) + 16px);
+      top: anchor(top);
+      background-color: var(--black-1000);
+      border: 1px solid var(--black-950);
+      width: calc(anchor-size(width) - 32px);
+      height: anchor-size(height);
+      position: absolute;
+      transition: all 0.3s ease;
+      pointer-events: none;
+      border-radius: 4px;
+    }
+  }
+
+  .nav-link {
+    font-family: var(--font-bebas-neue);
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--black-0);
+    text-transform: uppercase;
+    text-box-trim: trim-both;
+    text-box-edge: cap alphabetic;
+    padding: 8px 24px;
+    border-radius: 4px;
+    z-index: 1;
+
+    &:hover {
+      anchor-name: --h;
+    }
+  }
+
+  .logo,
+  .nav-link {
+    transition: color 0.3s ease-in-out;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--black-100);
+    }
   }
 </style>

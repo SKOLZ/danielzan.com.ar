@@ -1,0 +1,47 @@
+@import "./reset.css";
+
+.title-1 {
+  font-size: 5rem;
+  font-family: var(--font-bebas-neue);
+  color: var(--black-0);
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
+}
+
+.title-2 {
+  font-size: 3rem;
+  font-family: var(--font-bebas-neue);
+  color: var(--black-0);
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
+}
+
+.text-1 {
+  font-size: 1.5rem;
+  font-family: var(--font-zodiak);
+  color: var(--black-50);
+  line-height: 1;
+}
+
+
+.text-2 {
+  font-size: 0.75rem;
+  font-family: var(--font-zodiak);
+  letter-spacing: 0.08em;
+  font-weight: 400;
+  color: var(--black-300);
+}
+
+.link {
+  color: var(--black-150);
+  text-decoration: underline;
+  text-underline-offset: 0.1em;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--black-600);
+  transition: all 0.3s ease-in-out;
+
+  &:hover {
+    text-decoration-color: var(--black-300);
+    color: var(--black-50);
+  }
+}

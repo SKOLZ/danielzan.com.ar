@@ -24,11 +24,7 @@ export const blockContentType = defineType({
       // use your content.
       styles: [
         { title: "Normal", value: "normal" },
-        { title: "H1", value: "h1" },
         { title: "H2", value: "h2" },
-        { title: "H3", value: "h3" },
-        { title: "H4", value: "h4" },
-        { title: "Quote", value: "blockquote" },
       ],
       lists: [{ title: "Bullet", value: "bullet" }],
       // Marks let you mark up inline text in the Portable Text Editor
@@ -55,6 +51,23 @@ export const blockContentType = defineType({
           },
         ],
       },
+      of: [
+        defineArrayMember({
+          type: "image",
+          name: "inlineImage",
+          title: "Imagen en línea",
+          options: { hotspot: true },
+          fields: [
+            { name: "alt", type: "string", title: "Alt text" },
+            {
+              name: "caption",
+              type: "string",
+              title: "Caption",
+              validation: (Rule) => Rule.max(120),
+            },
+          ],
+        }),
+      ],
     }),
     // You can add additional types here. Note that you can't use
     // primitive types such as 'string' and 'number' in the same array
@@ -62,11 +75,18 @@ export const blockContentType = defineType({
     defineArrayMember({
       type: "image",
       options: { hotspot: true },
+      title: "Imagen",
       fields: [
         {
           name: "alt",
           type: "string",
           title: "Alternative Text",
+        },
+        {
+          name: "caption",
+          type: "string",
+          title: "Caption",
+          validation: (Rule) => Rule.max(120),
         },
       ],
     }),

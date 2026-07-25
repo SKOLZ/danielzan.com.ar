@@ -1,5 +1,5 @@
 // @ts-check
-import { defineConfig } from "astro/config";
+import { defineConfig, fontProviders } from "astro/config";
 
 import sanity from "@sanity/astro";
 import react from "@astrojs/react";
@@ -13,6 +13,9 @@ const { PUBLIC_SANITY_PROJECT_ID, PUBLIC_SANITY_DATASET } = loadEnv(
 
 // https://astro.build/config
 export default defineConfig({
+  image: {
+    domains: ["cdn.sanity.io"],
+  },
   site: "https://danielzan.com.ar",
   integrations: [
     sanity({
@@ -23,4 +26,18 @@ export default defineConfig({
     }),
     react(),
   ],
+  //add google as font provider
+  fonts: [{
+    provider: fontProviders.fontshare(),
+    name: "Bebas Neue",
+    cssVariable: "--font-bebas-neue",
+    fallbacks: ["sans-serif"],
+    weights: ["400"]
+  }, {
+    provider: fontProviders.fontshare(),
+    name: "Zodiak",
+    cssVariable: "--font-zodiak",
+    fallbacks: ["serif"],
+    weights: ["300","400"]
+  }]
 });

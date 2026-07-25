@@ -1,0 +1,73 @@
+---
+import { urlForImage } from "../../../sanity/lib/url-for-images";
+
+const { asset, alt, caption } = Astro.props.node;
+
+// Nothing to render without an asset
+if (!asset) return;
+
+// Intrinsic pixel dimensions stored by Sanity on upload — used to:
+//  1. Set width/height on <img> to prevent CLS
+//  2. Cap srcset widths so we never upscale (which causes pixelation)
+const intrinsicWidth: number = asset?.metadata?.dimensions?.width ?? 0;
+const intrinsicHeight: number = asset?.metadata?.dimensions?.height ?? 0;
+
+// Candidate widths covering 1× and 2× retina for common viewport sizes.
+// The browser's `sizes` + `srcset` (w-descriptor) algorithm automatically
+// picks a 2× retina image: a 800 CSS-px slot on a 2× display requests ≥1600px.
+const CANDIDATES = [400, 800, 1200, 1600, 2400];
+
+// Only include widths that are ≤ the intrinsic width (never upscale).
+// Always include the intrinsic width itself so the largest slot is served exactly.
+const widths = [
+  ...CANDIDATES.filter((w) => intrinsicWidth > 0 && w < intrinsicWidth),
+  ...(intrinsicWidth > 0 ? [intrinsicWidth] : [1200]),
+];
+
+const srcset = widths
+  .map((w) => `${urlForImage(asset).width(w).format("webp").url()} ${w}w`)
+  .join(", ");
+
+// Canonical src = largest available (= intrinsic, never upscaled)
+const src = urlForImage(asset)
+  .width(intrinsicWidth || 1200)
+  .format("webp")
+  .url();
+---
+
+<figure class="image-figure">
+  <img
+    class="responsive__img"
+    src={src}
+    alt={alt ?? ""}
+    width={intrinsicWidth || undefined}
+    height={intrinsicHeight || undefined}
+    srcset={srcset}
+    sizes="(max-width: 800px) 100vw, (max-width: 1200px) 80vw, 1200px"
+    loading="lazy"
+    decoding="async"
+  />
+  {caption && <figcaption class="text-2 image-caption">{caption}</figcaption>}
+</figure>
+
+<style>
+  .image-figure {
+    margin-inline: auto;
+    margin-block: 24px;
+  }
+
+  .responsive__img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    border: 1px solid var(--black-800);
+    display: block;
+    margin-inline: auto;
+  }
+
+  .image-caption {
+    margin-top: 8px;
+    text-align: center;
+    color: var(--black-300);
+  }
+</style>

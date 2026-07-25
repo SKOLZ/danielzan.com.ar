@@ -1,17 +1,30 @@
 ---
-import Social from "./Social.astro";
+import SkzDsgnLogo from "../assets/skolz_design_logo.svg";
 ---
 
+<footer class="container footer">
+  <a
+    href="https://skolz.design"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="skolz-logo"
+  >
+    <SkzDsgnLogo />
+  </a>
+</footer>
+
 <style>
-  footer {
+  .footer {
     display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
+    justify-content: flex-end;
+  }
+
+  .skolz-logo {
+    color: var(--black-500);
+    transition: color 0.2s ease-in-out;
+
+    &:hover {
+      color: var(--black-300);
+    }
   }
 </style>
-
-<footer>
-  <Social platform="twitter" username="astrodotbuild" />
-  <Social platform="github" username="withastro" />
-  <Social platform="youtube" username="astrodotbuild" />
-</footer>

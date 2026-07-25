@@ -4,12 +4,22 @@ import { loadQuery } from "../../sanity/lib/load-query";
 import { urlForImage } from "../../sanity/lib/url-for-images";
 export async function getStaticPaths() {
   const { data: posts } = await loadQuery({
-    query: `*[_type == "post"]`,
+    query: `*[_type == "post"]{ slug }`,
   });
   const a = await Promise.all(
     posts.map(async (post) => {
       const { data } = await loadQuery({
-        query: `*[_type == "post" && slug.current == $slug][0]`,
+        query: `*[_type == "post" && slug.current == $slug][0]{
+          ...,
+          body[]{
+            ...,
+            asset->{
+              _id,
+              url,
+              metadata { dimensions }
+            }
+          }
+        }`,
         params: {
           slug: post.slug.current,
         },

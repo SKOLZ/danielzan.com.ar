@@ -15,6 +15,7 @@
     "@sanity/astro": "^3.3.1",
     "@sanity/client": "^7.17.0",
     "@sanity/image-url": "^2.0.3",
+    "@sanity/locale-es-es": "^1.2.33",
     "astro": "6.0.4",
     "astro-portabletext": "^0.13.0",
     "preact": "^10.29.0",
@@ -25,8 +26,8 @@
     "styled-components": "^6.3.11"
   },
   "devDependencies": {
+    "@portabletext/types": "^4.0.2",
     "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@portabletext/types": "^4.0.2"
+    "@types/react-dom": "^19.2.3"
   }
 }
