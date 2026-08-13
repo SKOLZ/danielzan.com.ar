@@ -1,0 +1,22 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ResultsSection from "../../components/ResultsSection.astro";
+import { sanityClient } from "sanity:client";
+import { SEASONS_QUERY, ALL_RESULTS_QUERY } from "../../lib/sanity";
+
+const [seasons, results] = await Promise.all([
+  sanityClient.fetch(SEASONS_QUERY),
+  sanityClient.fetch(ALL_RESULTS_QUERY),
+]);
+const categories = [...new Set(results.map((r) => r.category).filter(Boolean))] as string[];
+---
+<BaseLayout title="Resultados" description="Todos los resultados de carrera de Daniel Zanzotti" activePage="resultados">
+  <div class="container" style="padding: 2rem 0;">
+    <h1 class="page-title">Historial de campeonatos</h1>
+    <ResultsSection
+      seasons={seasons}
+      categories={categories}
+      results={results}
+    />
+  </div>
+</BaseLayout>

@@ -1,0 +1,98 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { sanityClient } from "sanity:client";
+import { PHOTO_GALLERIES_QUERY, VIDEOS_QUERY, urlFor } from "../lib/sanity";
+
+const [galleries, videos] = await Promise.all([
+  sanityClient.fetch(PHOTO_GALLERIES_QUERY),
+  sanityClient.fetch(VIDEOS_QUERY),
+]);
+
+const categories = [...new Set([...galleries, ...videos].map((c) => c.category).filter(Boolean))];
+
+let activeCategory = Astro.url.searchParams.get("categoria") || "";
+const activeType = Astro.url.searchParams.get("tipo") || "";
+---
+<BaseLayout title="Media" description="Fotos, videos y canciones de Daniel Zanzotti" activePage="media">
+  <div class="container" style="padding: 2rem 0;">
+    <h1 class="page-title">Media</h1>
+
+    <div class="filter-bar" style="gap: 2.5rem; margin-bottom: 1.5rem;">
+      <div class="filter-group">
+        <label for="type-filter" class="filter-label">Tipo de media</label>
+        <select id="type-filter" class="filter-select">
+          <option value="">Todas</option>
+          <option value="fotos" selected={activeType === "fotos"}>Fotos</option>
+          <option value="videos" selected={activeType === "videos"}>Videos</option>
+        </select>
+      </div>
+      {categories.length > 0 && (
+        <div class="filter-group">
+          <label for="category-filter" class="filter-label">Categoría</label>
+          <select id="category-filter" class="filter-select">
+            <option value="">Todas</option>
+            {categories.map((cat) => (
+              <option value={cat} selected={activeCategory === cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+      )}
+    </div>
+
+    {activeType !== "videos" && (
+      <div class="media-grid">
+        {galleries
+          .filter((g) => !activeCategory || g.category === activeCategory)
+          .map((gallery) => (
+            <div class="media-card">
+              {gallery.photos?.[0]?.image?.asset?._ref && (
+                <img src={urlFor(gallery.photos[0].image).width(400).height(225).url()} alt={gallery.title} style="aspect-ratio: 16/9; object-fit: cover; width: 100%;" />
+              )}
+              <div class="media-card-body">
+                <span class="category-tag">{gallery.category || "General"}</span>
+                <h3>{gallery.title}</h3>
+              </div>
+            </div>
+          ))}
+      </div>
+    )}
+
+    {activeType !== "fotos" && (
+      <div class="media-grid">
+        {videos
+          .filter((v) => !activeCategory || v.category === activeCategory)
+          .map((video) => (
+            <div class="media-card">
+              <a href={`https://www.youtube.com/watch?v=${video.youtubeId}`} target="_blank" rel="noopener noreferrer" class="video-thumb">
+                <img src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`} alt={video.title} loading="lazy" />
+              </a>
+              <div class="media-card-body">
+                <span class="category-tag">{video.category || "General"}</span>
+                <h3>{video.title}</h3>
+                {video.description && <p class="media-desc">{video.description}</p>}
+              </div>
+            </div>
+          ))}
+      </div>
+    )}
+  </div>
+</BaseLayout>
+
+<script>
+  import { navigate } from "astro:transitions/client";
+  document.addEventListener("astro:page-load", () => {
+    const onSelect = (key) => (el) => {
+      const url = new URL(window.location.href);
+      if (el.value) {
+        url.searchParams.set(key, el.value);
+      } else {
+        url.searchParams.delete(key);
+      }
+      navigate(url.pathname + url.search);
+    };
+    const typeFilter = document.getElementById("type-filter");
+    if (typeFilter) typeFilter.addEventListener("change", () => onSelect("tipo")(typeFilter));
+    const categoryFilter = document.getElementById("category-filter");
+    if (categoryFilter) categoryFilter.addEventListener("change", () => onSelect("categoria")(categoryFilter));
+  });
+</script>

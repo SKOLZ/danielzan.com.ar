@@ -1,0 +1,37 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { sanityClient } from "sanity:client";
+import { ABOUT_QUERY } from "../lib/sanity";
+import { PortableText } from "astro-portabletext";
+
+const about = await sanityClient.fetch(ABOUT_QUERY);
+---
+<BaseLayout title="Sobre mí" description="Biografía de Daniel Zanzotti" activePage="about">
+  <div class="container about-content">
+    {about ? (
+      <>
+        <h1>{about.title || "Sobre mí"}</h1>
+        <div class="prose">
+          <PortableText value={about.body} />
+        </div>
+      </>
+    ) : (
+      <>
+        <h1>Sobre mí</h1>
+        <div class="prose">
+          <p>35 años subido a un formula...</p>
+          <p>
+            Daniel Zanzotti, conocido como "Danielzan", es un piloto argentino de Sport Prototipo.
+            Comenzó su carrera en 1979 en Fórmula Renault y ha competido durante más de 35 años
+            en distintas categorías del automovilismo nacional.
+          </p>
+          <p>
+            A lo largo de su trayectoria, logró consagrarse campeón en tres ocasiones (2009, 2013 y 2015)
+            y obtuvo múltiples subcampeonatos, siempre al volante de su emblemático Tulia XXIII
+            preparado por Becerra Racing y Teresio Motores.
+          </p>
+        </div>
+      </>
+    )}
+  </div>
+</BaseLayout>

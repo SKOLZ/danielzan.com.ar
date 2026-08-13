@@ -1,0 +1,168 @@
+---
+---
+
+<div class="player-bar" id="player-bar" hidden transition:persist="player-bar">
+  <div class="player-controls">
+    <div class="player-actions">
+      <button type="button" id="player-prev" class="player-btn" title="Canción anterior" aria-label="Canción anterior" disabled>‹</button>
+      <button type="button" id="player-toggle" class="player-btn" title="Reproducir / Pausar" aria-label="Reproducir o pausar">
+        <svg class="player-toggle-icon" id="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+        <svg class="player-toggle-icon" id="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display: none"><path d="M6 5h4v14H6zM14 5h4v14h-4z" /></svg>
+      </button>
+      <button type="button" id="player-next" class="player-btn" title="Siguiente canción" aria-label="Siguiente canción" disabled>›</button>
+    </div>
+    <span class="player-title" id="player-title"></span>
+  </div>
+  <button type="button" id="player-close" class="player-btn player-close" title="Cerrar reproductor" aria-label="Cerrar reproductor">✕</button>
+</div>
+<audio id="player-audio" preload="metadata" transition:persist="player-audio"></audio>
+
+<script>
+  const STORAGE_KEY = "danielzan-player";
+
+  const bar = document.getElementById("player-bar");
+  const audio = document.getElementById("player-audio");
+  const titleEl = document.getElementById("player-title");
+  const prevBtn = document.getElementById("player-prev");
+  const nextBtn = document.getElementById("player-next");
+  const toggleBtn = document.getElementById("player-toggle");
+  const closeBtn = document.getElementById("player-close");
+  const iconPlay = document.getElementById("icon-play");
+  const iconPause = document.getElementById("icon-pause");
+
+  let playlist: { title: string; url: string }[] = [];
+  let index = -1;
+  let pendingTime = 0;
+
+  const readState = () => {
+    try {
+      const s = JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? "null");
+      if (s && Array.isArray(s.list) && s.list.length) return s;
+    } catch {}
+    return null;
+  };
+
+  const writeState = (playing: boolean) => {
+    try {
+      sessionStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ list: playlist, index, currentTime: audio.currentTime || 0, playing })
+      );
+    } catch {}
+  };
+
+  const clearState = () => {
+    try {
+      sessionStorage.removeItem(STORAGE_KEY);
+    } catch {}
+  };
+
+  const setIcons = (playing: boolean) => {
+    iconPlay.style.display = playing ? "none" : "";
+    iconPause.style.display = playing ? "" : "none";
+  };
+
+  const updateNav = () => {
+    prevBtn.disabled = index <= 0;
+    nextBtn.disabled = index >= playlist.length - 1;
+  };
+
+  const loadSong = (i: number, startTime: number, autoplay: boolean) => {
+    index = i;
+    pendingTime = startTime || 0;
+    audio.src = playlist[i].url;
+    titleEl.textContent = playlist[i].title;
+    updateNav();
+    if (autoplay) {
+      audio.play().then(() => setIcons(true)).catch(() => {});
+    } else {
+      setIcons(false);
+    }
+  };
+
+  const startPlayback = (detail: { list: { title: string; url: string }[]; index: number }) => {
+    playlist = detail.list;
+    bar.hidden = false;
+    loadSong(detail.index ?? 0, 0, true);
+    writeState(true);
+  };
+
+  audio.addEventListener("loadedmetadata", () => {
+    if (pendingTime > 0) {
+      audio.currentTime = pendingTime;
+      pendingTime = 0;
+    }
+  });
+
+  audio.addEventListener("play", () => {
+    setIcons(true);
+    writeState(true);
+  });
+  audio.addEventListener("pause", () => {
+    setIcons(false);
+    writeState(false);
+  });
+  audio.addEventListener("timeupdate", () => {
+    if (!audio.paused) writeState(true);
+  });
+  audio.addEventListener("ended", () => {
+    if (index < playlist.length - 1) {
+      loadSong(index + 1, 0, true);
+      writeState(true);
+    } else {
+      setIcons(false);
+      writeState(false);
+    }
+  });
+
+  prevBtn.addEventListener("click", () => {
+    if (index > 0) {
+      loadSong(index - 1, 0, true);
+      writeState(true);
+    }
+  });
+  nextBtn.addEventListener("click", () => {
+    if (index < playlist.length - 1) {
+      loadSong(index + 1, 0, true);
+      writeState(true);
+    }
+  });
+  toggleBtn.addEventListener("click", () => {
+    if (audio.paused) audio.play().then(() => setIcons(true)).catch(() => {});
+    else audio.pause();
+  });
+  closeBtn.addEventListener("click", () => {
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+    setIcons(false);
+    bar.hidden = true;
+    playlist = [];
+    index = -1;
+    clearState();
+  });
+
+  window.addEventListener("pagehide", () => {
+    if (playlist.length && audio.src) writeState(!audio.paused);
+  });
+
+  window.addEventListener("player:play", (e: Event) => startPlayback((e as CustomEvent).detail));
+
+  const state = readState();
+  if (state) {
+    playlist = state.list;
+    index = state.index ?? 0;
+    if (index < 0 || index >= playlist.length) index = 0;
+    bar.hidden = false;
+    loadSong(index, state.currentTime ?? 0, false);
+    if (state.playing) {
+      audio.play().then(() => setIcons(true)).catch(() => {
+        const resume = () => {
+          audio.play().then(() => setIcons(true)).catch(() => {});
+          document.removeEventListener("click", resume);
+        };
+        document.addEventListener("click", resume);
+      });
+    }
+  }
+</script>

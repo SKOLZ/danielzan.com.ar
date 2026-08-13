@@ -1,0 +1,7 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "types": ["@sanity/astro/module"]
+  },
+  "include": ["src/**/*", "sanity.types.ts"]
+}
