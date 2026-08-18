@@ -1,5 +1,4 @@
 import { about } from "./documents/about";
-import { author } from "./documents/author";
 import { category } from "./documents/category";
 import { photoGallery } from "./documents/photoGallery";
 import { post } from "./documents/post";
@@ -13,7 +12,6 @@ import { blockContent } from "./blockContent";
 
 export const schemaTypes = [
   category,
-  author,
   post,
   season,
   raceResult,

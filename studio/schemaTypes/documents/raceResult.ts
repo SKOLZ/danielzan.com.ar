@@ -39,7 +39,8 @@ export const raceResult = defineType({
     defineField({
       name: "category",
       title: "Categoría",
-      type: "string",
+      type: "reference",
+      to: [{ type: "category" }],
     }),
   ],
   preview: {

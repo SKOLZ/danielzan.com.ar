@@ -25,11 +25,8 @@ export const video = defineType({
     defineField({
       name: "category",
       title: "Categoría",
-      type: "string",
-      options: {
-        list: ["Formula 4", "Sport Prototipo", "General"],
-      },
-      initialValue: "General",
+      type: "reference",
+      to: [{ type: "category" }],
     }),
   ],
   preview: {

@@ -48,7 +48,7 @@ export const SEASONS_QUERY = defineQuery(`
     _id,
     year,
     finalPosition,
-    category
+    "category": category->title
   }
 `);
 
@@ -57,7 +57,7 @@ export const ALL_RESULTS_QUERY = defineQuery(`
     _id,
     date,
     position,
-    category
+    "category": category->title
   }
 `);
 
@@ -66,7 +66,7 @@ export const RECENT_RESULTS_QUERY = defineQuery(`
     _id,
     date,
     position,
-    category
+    "category": category->title
   }
 `);
 
@@ -74,12 +74,10 @@ export const PHOTO_GALLERIES_QUERY = defineQuery(`
   *[_type == "photoGallery"] {
     _id,
     title,
-    slug,
-    category,
+    "category": category->title,
     photos[] {
       _key,
-      image,
-      caption
+      asset
     }
   }
 `);
@@ -90,7 +88,7 @@ export const VIDEOS_QUERY = defineQuery(`
     title,
     youtubeId,
     description,
-    category
+    "category": category->title
   }
 `);
 

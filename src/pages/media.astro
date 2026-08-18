@@ -9,9 +9,6 @@ const [galleries, videos] = await Promise.all([
 ]);
 
 const categories = [...new Set([...galleries, ...videos].map((c) => c.category).filter(Boolean))];
-
-let activeCategory = Astro.url.searchParams.get("categoria") || "";
-const activeType = Astro.url.searchParams.get("tipo") || "";
 ---
 <BaseLayout title="Media" description="Fotos, videos y canciones de Daniel Zanzotti" activePage="media">
   <div class="container" style="padding: 2rem 0;">
@@ -22,8 +19,8 @@ const activeType = Astro.url.searchParams.get("tipo") || "";
         <label for="type-filter" class="filter-label">Tipo de media</label>
         <select id="type-filter" class="filter-select">
           <option value="">Todas</option>
-          <option value="fotos" selected={activeType === "fotos"}>Fotos</option>
-          <option value="videos" selected={activeType === "videos"}>Videos</option>
+          <option value="fotos">Fotos</option>
+          <option value="videos">Videos</option>
         </select>
       </div>
       {categories.length > 0 && (
@@ -32,67 +29,87 @@ const activeType = Astro.url.searchParams.get("tipo") || "";
           <select id="category-filter" class="filter-select">
             <option value="">Todas</option>
             {categories.map((cat) => (
-              <option value={cat} selected={activeCategory === cat}>{cat}</option>
+              <option value={cat}>{cat}</option>
             ))}
           </select>
         </div>
       )}
     </div>
 
-    {activeType !== "videos" && (
-      <div class="media-grid">
-        {galleries
-          .filter((g) => !activeCategory || g.category === activeCategory)
-          .map((gallery) => (
-            <div class="media-card">
-              {gallery.photos?.[0]?.image?.asset?._ref && (
-                <img src={urlFor(gallery.photos[0].image).width(400).height(225).url()} alt={gallery.title} style="aspect-ratio: 16/9; object-fit: cover; width: 100%;" />
-              )}
-              <div class="media-card-body">
-                <span class="category-tag">{gallery.category || "General"}</span>
-                <h3>{gallery.title}</h3>
-              </div>
-            </div>
-          ))}
-      </div>
-    )}
+    <div class="media-grid">
+      {galleries.map((gallery) => (
+        <div class="media-card" data-type="fotos" data-category={gallery.category || ""}>
+          {gallery.photos?.[0]?.asset?._ref && (
+            <img src={urlFor(gallery.photos[0]).width(400).height(225).url()} alt={gallery.title} style="aspect-ratio: 16/9; object-fit: cover; width: 100%;" />
+          )}
+          <div class="media-card-body">
+            <span class="category-tag">{gallery.category || "General"}</span>
+            <h3>{gallery.title}</h3>
+          </div>
+        </div>
+      ))}
+    </div>
 
-    {activeType !== "fotos" && (
-      <div class="media-grid">
-        {videos
-          .filter((v) => !activeCategory || v.category === activeCategory)
-          .map((video) => (
-            <div class="media-card">
-              <a href={`https://www.youtube.com/watch?v=${video.youtubeId}`} target="_blank" rel="noopener noreferrer" class="video-thumb">
-                <img src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`} alt={video.title} loading="lazy" />
-              </a>
-              <div class="media-card-body">
-                <span class="category-tag">{video.category || "General"}</span>
-                <h3>{video.title}</h3>
-                {video.description && <p class="media-desc">{video.description}</p>}
-              </div>
-            </div>
-          ))}
-      </div>
-    )}
+    <div class="media-grid">
+      {videos.map((video) => (
+        <div class="media-card" data-type="videos" data-category={video.category || ""}>
+          <a href={`https://www.youtube.com/watch?v=${video.youtubeId}`} target="_blank" rel="noopener noreferrer" class="video-thumb">
+            <img src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`} alt={video.title} loading="lazy" />
+          </a>
+          <div class="media-card-body">
+            <span class="category-tag">{video.category || "General"}</span>
+            <h3>{video.title}</h3>
+            {video.description && <p class="media-desc">{video.description}</p>}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <p class="media-empty" hidden>No hay contenido para ese filtro.</p>
   </div>
 </BaseLayout>
 
 <script>
-  import { navigate } from "astro:transitions/client";
+  function applyMediaFilter() {
+    const typeFilter = document.getElementById("type-filter");
+    const categoryFilter = document.getElementById("category-filter");
+    if (!typeFilter || !categoryFilter) return;
+    const tipo = typeFilter.value;
+    const cat = categoryFilter.value;
+    const cards = document.querySelectorAll(".media-card");
+    let visible = 0;
+    for (const card of cards) {
+      const show =
+        (!tipo || card.dataset.type === tipo) &&
+        (!cat || card.dataset.category === cat);
+      card.hidden = !show;
+      if (show) visible++;
+    }
+    const empty = document.querySelector(".media-empty");
+    if (empty) empty.hidden = visible > 0;
+  }
+
   document.addEventListener("astro:page-load", () => {
+    const typeFilter = document.getElementById("type-filter");
+    const categoryFilter = document.getElementById("category-filter");
+    if (!typeFilter || !categoryFilter) return;
+
     const onSelect = (key) => (el) => {
       const url = new URL(window.location.href);
-      if (el.value) {
-        url.searchParams.set(key, el.value);
-      } else {
-        url.searchParams.delete(key);
-      }
-      navigate(url.pathname + url.search);
+      if (el.value) url.searchParams.set(key, el.value);
+      else url.searchParams.delete(key);
+      history.pushState({}, "", url.pathname + url.search);
+      applyMediaFilter();
     };
-    const typeFilter = document.getElementById("type-filter");
-    if (typeFilter) typeFilter.addEventListener("change", () => onSelect("tipo")(typeFilter));
-    const categoryFilter = document.getElementById("category-filter");
-    if (categoryFilter) categoryFilter.addEventListener("change", () => onSelect("categoria")(categoryFilter));
+
+    typeFilter.addEventListener("change", () => onSelect("tipo")(typeFilter));
+    categoryFilter.addEventListener("change", () => onSelect("categoria")(categoryFilter));
+
+    const params = new URLSearchParams(window.location.search);
+    typeFilter.value = params.get("tipo") || "";
+    categoryFilter.value = params.get("categoria") || "";
+    applyMediaFilter();
   });
+
+  window.addEventListener("popstate", applyMediaFilter);
 </script>

@@ -56,12 +56,6 @@ export const post = defineType({
       type: "reference",
       to: [{ type: "category" }],
     }),
-    defineField({
-      name: "author",
-      title: "Autor",
-      type: "reference",
-      to: [{ type: "author" }],
-    }),
   ],
   preview: {
     select: {

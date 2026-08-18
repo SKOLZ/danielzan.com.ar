@@ -1,4 +1,5 @@
 import { defineType, defineField, defineArrayMember } from "sanity";
+import { GalleryPhotosInput } from "../../components/GalleryPhotosInput";
 
 export const photoGallery = defineType({
   name: "photoGallery",
@@ -12,56 +13,30 @@ export const photoGallery = defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
-      name: "slug",
-      title: "Slug",
-      type: "slug",
-      options: { source: "title" },
-    }),
-    defineField({
       name: "photos",
       title: "Fotos",
       type: "array",
       of: [
         defineArrayMember({
-          name: "photo",
-          title: "Foto",
-          type: "object",
-          fields: [
-            defineField({
-              name: "image",
-              title: "Imagen",
-              type: "image",
-              options: { hotspot: true },
-            }),
-            defineField({
-              name: "caption",
-              title: "Leyenda",
-              type: "string",
-            }),
-          ],
-          preview: {
-            select: {
-              media: "image",
-              title: "caption",
-            },
-          },
+          type: "image",
+          options: { hotspot: true },
         }),
       ],
+      components: {
+        input: GalleryPhotosInput,
+      },
     }),
     defineField({
       name: "category",
       title: "Categoría",
-      type: "string",
-      options: {
-        list: ["Formula 4", "Sport Prototipo", "General"],
-      },
-      initialValue: "General",
+      type: "reference",
+      to: [{ type: "category" }],
     }),
   ],
   preview: {
     select: {
       title: "title",
-      media: "photos.0.image",
+      media: "photos.0",
     },
   },
 });
