@@ -72,7 +72,6 @@ export const RECENT_RESULTS_QUERY = defineQuery(`
 
 export const PHOTO_GALLERIES_QUERY = defineQuery(`
   *[_type == "photoGallery"] {
-    _id,
     title,
     "category": category->title,
     photos[] {
