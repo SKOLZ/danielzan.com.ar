@@ -1,4 +1,7 @@
 {
+  "framework": "astro",
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm build",
   "headers": [
     {
       "source": "/images/(.*)",

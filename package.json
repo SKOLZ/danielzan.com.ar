@@ -2,8 +2,9 @@
   "name": "danielzan.com.ar",
   "type": "module",
   "version": "0.0.1",
+  "packageManager": "pnpm@12.3.4",
   "engines": {
-    "node": ">=22.12.0"
+    "node": "24.20.0"
   },
   "scripts": {
     "dev": "astro dev",
