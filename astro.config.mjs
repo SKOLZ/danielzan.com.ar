@@ -5,7 +5,7 @@ import sanity from "@sanity/astro";
 const { PUBLIC_SANITY_PROJECT_ID, PUBLIC_SANITY_DATASET } = loadEnv(
   process.env.NODE_ENV ?? "development",
   process.cwd(),
-  ""
+  "",
 );
 
 export default defineConfig({
@@ -19,5 +19,10 @@ export default defineConfig({
   i18n: {
     defaultLocale: "es",
     locales: ["es"],
+  },
+  vite: {
+    server: {
+      allowedHosts: ["danielzan.com.ar", "localhost"],
+    },
   },
 });

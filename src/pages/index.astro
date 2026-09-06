@@ -4,6 +4,7 @@ import { sanityClient } from "sanity:client";
 import { PortableText } from "astro-portabletext";
 import PortableImage from "../components/PortableImage.astro";
 import Gallery from "../components/Gallery.astro";
+import Pagination from "../components/Pagination.astro";
 import { POSTS_QUERY, POSTS_COUNT_QUERY, SEASONS_QUERY, RECENT_RESULTS_QUERY, SONGS_QUERY, TEAM_QUERY, SPONSORS_QUERY, urlFor } from "../lib/sanity";
 import { positionClass } from "../lib/positions";
 
@@ -31,7 +32,7 @@ function groupImages(body: any[]): any[] {
   return result;
 }
 
-const perPage = 10;
+const perPage = 5;
 const [allPosts, totalPosts, seasons, recentResults, songs, teams, sponsors] = await Promise.all([
   sanityClient.fetch(POSTS_QUERY, { start: 0, end: 999 }),
   sanityClient.fetch(POSTS_COUNT_QUERY),
@@ -106,57 +107,56 @@ const trophyIcon = (pos: string) => {
         ))}
       </div>
 
-      {totalPages > 1 && (
-        <div id="pagination" class="pagination" data-total={totalPages}>
-          <a href="#" data-page="prev" id="prev-link" class="page-nav is-disabled" aria-disabled="true" aria-label="Anterior"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg></a>
-          <span id="page-numbers"></span>
-          <a href="#" data-page="next" id="next-link" class="page-nav is-disabled" aria-disabled="true" aria-label="Siguiente"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg></a>
-        </div>
-      )}
+      {totalPages > 1 && <Pagination />}
     </div>
 
     <aside class="sidebar">
-      <div class="sidebar-section">
         <div class="sidebar-group">
           <h2>Temporadas</h2>
-          {seasons.map((s) => (
-            <div class="season-item">
-              <span class="season-badge">
-                {trophyIcon(s.finalPosition) && <img src={trophyIcon(s.finalPosition)} alt={s.finalPosition} width="20" height="20" />}
-              </span>
-              <span class="season-year">{s.year}</span>
-              <span class={`season-pos ${positionClass(s.finalPosition)}`} style={positionClass(s.finalPosition) ? `color: var(--${positionClass(s.finalPosition)})` : ""}>
-                {s.finalPosition}
-              </span>
-              <span class="season-cat">{s.category}</span>
-            </div>
-          ))}
+          <div class="sidebar-content">
+            {seasons.map((s) => (
+              <div class="season-item">
+                <span class="season-badge">
+                  {trophyIcon(s.finalPosition) && <img src={trophyIcon(s.finalPosition)} alt={s.finalPosition} width="20" height="20" />}
+                </span>
+                <span class="season-year">{s.year}</span>
+                <span class={`season-pos ${positionClass(s.finalPosition)}`} style={positionClass(s.finalPosition) ? `color: var(--${positionClass(s.finalPosition)})` : ""}>
+                  {s.finalPosition}
+                </span>
+                <span class="season-cat">{s.category}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div class="sidebar-group">
           <h2>Últimos resultados</h2>
-          {recentResults.map((r) => (
-            <div class="result-item">
-              <span class={`result-pos ${resultClass(r.position)}`}>{r.position}</span>
-              <span class="result-date">{formatDate(r.date)}</span>
-            </div>
-          ))}
-          <a href="/resultados" class="sidebar-link">Ver todos →</a>
+          <div class="sidebar-content">
+            {recentResults.map((r) => (
+              <div class="result-item">
+                <span class={`result-pos ${resultClass(r.position)}`}>{r.position}</span>
+                <span class="result-date">{formatDate(r.date)}</span>
+              </div>
+            ))}
+            <a href="/resultados" class="sidebar-link">Ver todos →</a>
+          </div>
         </div>
 
         {teamsWithLogos.length > 0 && (
           <div class="sidebar-group">
             <h2>Equipo</h2>
-            <div class="logo-row">
-              {teamsWithLogos.map((t) =>
-                t.url ? (
-                  <a href={t.url} target="_blank" rel="noopener" title={t.name}>
+            <div class="sidebar-content">
+              <div class="logo-row">
+                {teamsWithLogos.map((t) =>
+                  t.url ? (
+                    <a href={t.url} target="_blank" rel="noopener" title={t.name}>
+                      <img src={t.logo.asset.url} alt={t.name} class="sidebar-logo" />
+                    </a>
+                  ) : (
                     <img src={t.logo.asset.url} alt={t.name} class="sidebar-logo" />
-                  </a>
-                ) : (
-                  <img src={t.logo.asset.url} alt={t.name} class="sidebar-logo" />
-                )
-              )}
+                  )
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -164,127 +164,80 @@ const trophyIcon = (pos: string) => {
         {sponsors.some((s) => s.logo?.asset?.url) && (
           <div class="sidebar-group">
             <h2>Auspiciantes</h2>
-            <div class="logo-row">
-              {sponsors.map((s) =>
-                s.logo?.asset?.url ? (
-                  s.url ? (
-                    <a href={s.url} target="_blank" rel="noopener" title={s.name}>
+            <div class="sidebar-content">
+              <div class="logo-row">
+                {sponsors.map((s) =>
+                  s.logo?.asset?.url ? (
+                    s.url ? (
+                      <a href={s.url} target="_blank" rel="noopener" title={s.name}>
+                        <img src={s.logo.asset.url} alt={s.name} class="sidebar-logo" />
+                      </a>
+                    ) : (
                       <img src={s.logo.asset.url} alt={s.name} class="sidebar-logo" />
-                    </a>
-                  ) : (
-                    <img src={s.logo.asset.url} alt={s.name} class="sidebar-logo" />
-                  )
-                ) : null
+                    )
+                  ) : null
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {songs.length > 0 && (
+          <div class="sidebar-group">
+            <h2>Playlist</h2>
+            <div class="sidebar-content">
+              {songs.some((s) => s.audio?.asset?.url) ? (
+                <div class="playlist">
+                  {songs.map((song, i) => (
+                    <button type="button" class={`playlist-item${song.audio?.asset?.url ? "" : " is-disabled"}`} data-url={song.audio?.asset?.url ?? ""}><span class="playlist-num">{String(i + 1).padStart(2, "0")}.</span><span class="playlist-title">{song.title}</span>{song.audio?.asset?.url ? <span class="playlist-num playlist-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20m-2 6l7 4-7 4z" /></svg></span> : null}</button>
+                  ))}
+                </div>
+              ) : (
+                <span class="playlist-empty">{songs.map((s) => s.title).join(" · ")}</span>
               )}
             </div>
           </div>
         )}
-      </div>
-
-      {songs.length > 0 && (
-        <div class="sidebar-card">
-          <h2>Playlist</h2>
-          {songs.some((s) => s.audio?.asset?.url) ? (
-            <div class="playlist">
-              {songs.map((song, i) => (
-                <button type="button" class={`playlist-item${song.audio?.asset?.url ? "" : " is-disabled"}`} data-url={song.audio?.asset?.url ?? ""}><span class="playlist-num">{String(i + 1).padStart(2, "0")}.</span><span class="playlist-title">{song.title}</span>{song.audio?.asset?.url ? <span class="playlist-num playlist-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20m-2 6l7 4-7 4z" /></svg></span> : null}</button>
-              ))}
-            </div>
-          ) : (
-            <span class="playlist-empty">{songs.map((s) => s.title).join(" · ")}</span>
-          )}
-        </div>
-      )}
     </aside>
   </div>
 </BaseLayout>
 
 <script>
+  import { setupPager, pageUrl, revealInitialContent } from "../scripts/pagination";
+
   document.addEventListener('astro:page-load', () => {
     const posts = document.querySelectorAll('[data-page]');
-    const pageNumbers = document.getElementById('page-numbers');
-    const prevLink = document.getElementById('prev-link');
-    const nextLink = document.getElementById('next-link');
-    const totalPages = parseInt(document.getElementById('pagination')?.dataset.total || '1', 10);
+    const pagerEl = document.getElementById('pagination');
 
-    if (posts.length && pageNumbers && prevLink && nextLink) {
-      let currentPage = 1;
+    if (posts.length && pagerEl) {
+      const totalPages = Math.max(
+        1,
+        ...Array.from(posts, (p) => parseInt(p.dataset.page, 10)),
+      );
 
-      function getPageFromUrl() {
-        const p = parseInt(new URLSearchParams(window.location.search).get('pagina'), 10);
-        return Number.isInteger(p) && p >= 1 && p <= totalPages ? p : 1;
-      }
-
-      function setUrlParam(page) {
-        const url = new URL(window.location.href);
-        if (page > 1) {
-          url.searchParams.set('pagina', String(page));
-        } else {
-          url.searchParams.delete('pagina');
-        }
-        history.pushState(null, '', url.pathname + url.search);
-      }
-
-      function showPage(page, pushUrl) {
-        currentPage = page;
+      function showPage(page) {
         posts.forEach(p => {
-          p.style.display = parseInt(p.dataset.page) === page ? '' : 'none';
+          p.style.display = parseInt(p.dataset.page, 10) === page ? '' : 'none';
         });
-        prevLink.classList.toggle('is-disabled', page <= 1);
-        prevLink.setAttribute('aria-disabled', page <= 1 ? 'true' : 'false');
-        nextLink.classList.toggle('is-disabled', page >= totalPages);
-        nextLink.setAttribute('aria-disabled', page >= totalPages ? 'true' : 'false');
-        if (pushUrl) setUrlParam(page);
-        renderPageNumbers();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        pager.render();
       }
 
-      function pagerItems(current, total) {
-        if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-        const items = [1];
-        const start = Math.max(2, current - 1);
-        const end = Math.min(total - 1, current + 1);
-        if (start > 2) items.push('…');
-        for (let i = start; i <= end; i++) items.push(i);
-        if (end < total - 1) items.push('…');
-        items.push(total);
-        return items;
-      }
-
-      function renderPageNumbers() {
-        pageNumbers.innerHTML = '';
-        pagerItems(currentPage, totalPages).forEach((item) => {
-          if (item === '…') {
-            const span = document.createElement('span');
-            span.className = 'ellipsis';
-            span.textContent = '…';
-            pageNumbers.appendChild(span);
-            return;
+      const pager = setupPager(pagerEl, {
+        getTotal: () => totalPages,
+        buildUrl: (page) => pageUrl(window.location.pathname, page),
+        navigate: (page, pushUrl) => {
+          if (pushUrl) {
+            history.pushState({}, '', pageUrl(window.location.pathname, page));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }
-          if (item === currentPage) {
-            const span = document.createElement('span');
-            span.className = 'current';
-            span.textContent = String(item);
-            pageNumbers.appendChild(span);
-          } else {
-            const a = document.createElement('a');
-            a.href = '?pagina=' + item;
-            a.className = 'page-num';
-            a.textContent = String(item);
-            a.addEventListener('click', (e) => { e.preventDefault(); showPage(item, true); });
-            pageNumbers.appendChild(a);
-          }
-        });
-      }
+          showPage(page);
+        },
+      });
 
-      prevLink.addEventListener('click', (e) => { e.preventDefault(); if (currentPage > 1) showPage(currentPage - 1, true); });
-      nextLink.addEventListener('click', (e) => { e.preventDefault(); if (currentPage < totalPages) showPage(currentPage + 1, true); });
-      if (!window.__dzIndexPagerBound) {
-        window.addEventListener('popstate', () => showPage(getPageFromUrl(), false));
-        window.__dzIndexPagerBound = true;
-      }
-      showPage(getPageFromUrl(), false);
+      showPage(pager.page());
     }
+
+    revealInitialContent();
 
     const playlistButtons = Array.from(document.querySelectorAll('.playlist-item'));
 

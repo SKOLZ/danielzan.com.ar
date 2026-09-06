@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { sanityClient } from "sanity:client";
+import { extractYouTubeId } from "../lib/youtube";
 import { PHOTO_GALLERIES_QUERY, VIDEOS_QUERY, urlFor } from "../lib/sanity";
 
 const [galleries, videos] = await Promise.all([
@@ -8,9 +9,14 @@ const [galleries, videos] = await Promise.all([
   sanityClient.fetch(VIDEOS_QUERY),
 ]);
 
+const videosWithId = videos
+  .map((v) => ({ ...v, videoId: extractYouTubeId(v.youtubeUrl ?? "") ?? "" }))
+  .filter((v) => v.videoId !== "");
+
 const photos = galleries.flatMap((g) =>
   (g.photos || []).map((p) => ({
     ...p,
+    photoTitle: p.title,
     galleryTitle: g.title,
     category: g.category,
   }))
@@ -22,19 +28,19 @@ const lightboxItems = [
   ...photos.filter((p) => p.asset?._ref).map((p) => ({
     type: "image",
     src: urlFor(p).width(1600).url(),
-    alt: p.galleryTitle,
+    alt: p.photoTitle || p.galleryTitle,
   })),
-  ...videos.map((v) => ({
+  ...videosWithId.map((v) => ({
     type: "video",
-    youtubeId: v.youtubeId,
+    youtubeId: v.videoId,
   })),
 ];
 ---
 <BaseLayout title="Media" description="Fotos, videos y canciones de Daniel Zanzotti" activePage="media">
-  <div class="container" style="padding: 2rem 0;">
+  <div class="container" style="padding-top: 2rem; padding-bottom: 2rem;">
     <h1 class="page-title">Media</h1>
 
-    <div class="filter-bar" style="gap: 2.5rem; margin-bottom: 1.5rem;">
+    <div class="filter-bar page-filters">
       <div class="filter-group">
         <label for="type-filter" class="filter-label">Tipo de media</label>
         <select id="type-filter" class="filter-select">
@@ -64,20 +70,20 @@ const lightboxItems = [
               <img src={urlFor(photo).width(400).height(225).url()} alt={photo.galleryTitle} loading="lazy" />
             </span>
           )}
-          <div class="media-card-body">
+          <div class={`media-card-body${photo.photoTitle ? "" : " no-title"}`}>
             <span class="category-tag">{photo.category || "General"}</span>
-            <h3 title={photo.galleryTitle}>{photo.galleryTitle}</h3>
+            {photo.photoTitle && <h3 title={photo.photoTitle}>{photo.photoTitle}</h3>}
           </div>
         </div>
       ))}
-      {videos.map((video, i) => (
+      {videosWithId.map((video, i) => (
         <div class="media-card" data-type="videos" data-category={video.category || ""} data-index={photos.length + i} role="button" tabindex="0">
           <span class="media-card-thumb video-thumb">
-            <img src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`} alt={video.title} loading="lazy" />
+            <img src={`https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`} alt={video.title} loading="lazy" />
           </span>
-          <div class="media-card-body">
+          <div class={`media-card-body${video.title ? "" : " no-title"}`}>
             <span class="category-tag">{video.category || "General"}</span>
-            <h3 title={video.title}>{video.title}</h3>
+            {video.title && <h3 title={video.title}>{video.title}</h3>}
           </div>
         </div>
       ))}
@@ -100,6 +106,8 @@ const lightboxItems = [
 <script is:inline set:html={`window.__lightboxItems = ${JSON.stringify(lightboxItems)};`} />
 
 <script>
+  import { revealInitialContent } from "../scripts/pagination";
+
   function applyMediaFilter() {
     const typeFilter = document.getElementById("type-filter");
     const categoryFilter = document.getElementById("category-filter");
@@ -162,7 +170,7 @@ const lightboxItems = [
     if (item.type === "image") {
       body.innerHTML = `<img src="${item.src}" alt="${item.alt || ""}" />`;
     } else {
-      body.innerHTML = `<iframe src="https://www.youtube.com/embed/${item.youtubeId}?autoplay=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+      body.innerHTML = `<iframe src="https://www.youtube.com/embed/${item.youtubeId}?autoplay=1&playsinline=1&muted=1&rel=0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
     }
 
     counter.textContent = `${posInVisible + 1} / ${visible.length}`;
@@ -210,6 +218,7 @@ const lightboxItems = [
     typeFilter.value = params.get("tipo") || "";
     categoryFilter.value = params.get("categoria") || "";
     applyMediaFilter();
+    revealInitialContent();
 
     document.querySelectorAll<HTMLElement>(".media-card[data-index]").forEach((card) => {
       const handler = () => {

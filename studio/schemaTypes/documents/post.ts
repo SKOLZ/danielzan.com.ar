@@ -2,7 +2,7 @@ import { defineType, defineField } from "sanity";
 
 export const post = defineType({
   name: "post",
-  title: "Entrada",
+  title: "Noticia",
   type: "document",
   fields: [
     defineField({
@@ -12,43 +12,16 @@ export const post = defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
-      name: "slug",
-      title: "Slug",
-      type: "slug",
-      options: { source: "title", maxLength: 96 },
-    }),
-    defineField({
       name: "publishedAt",
       title: "Fecha de publicación",
       type: "datetime",
+      description: "Se establece automáticamente al publicar si se deja vacío",
+      initialValue: () => new Date().toISOString(),
     }),
     defineField({
       name: "body",
       title: "Cuerpo",
       type: "blockContent",
-    }),
-    defineField({
-      name: "excerpt",
-      title: "Extracto",
-      type: "text",
-    }),
-    defineField({
-      name: "mainImage",
-      title: "Imagen principal",
-      type: "image",
-      options: { hotspot: true },
-      fields: [
-        defineField({
-          name: "alt",
-          title: "Texto alternativo",
-          type: "string",
-        }),
-      ],
-    }),
-    defineField({
-      name: "year",
-      title: "Año",
-      type: "number",
     }),
     defineField({
       name: "category",
@@ -60,14 +33,12 @@ export const post = defineType({
   preview: {
     select: {
       title: "title",
-      subtitle: "year",
-      media: "mainImage",
+      subtitle: "publishedAt",
     },
-    prepare({ title, subtitle, media }) {
+    prepare({ title, subtitle }) {
       return {
         title: title ?? "Sin título",
-        subtitle: subtitle ? String(subtitle) : "",
-        media,
+        subtitle: subtitle ? new Date(subtitle).toLocaleDateString("es-AR") : "",
       };
     },
   },

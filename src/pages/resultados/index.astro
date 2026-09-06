@@ -11,7 +11,7 @@ const [seasons, results] = await Promise.all([
 const categories = [...new Set(results.map((r) => r.category).filter(Boolean))] as string[];
 ---
 <BaseLayout title="Resultados" description="Todos los resultados de carrera de Daniel Zanzotti" activePage="resultados">
-  <div class="container" style="padding: 2rem 0;">
+  <div class="container" style="padding-top: 2rem; padding-bottom: 2rem;">
     <h1 class="page-title">Historial de campeonatos</h1>
     <ResultsSection
       seasons={seasons}

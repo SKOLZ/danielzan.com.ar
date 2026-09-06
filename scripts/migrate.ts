@@ -173,13 +173,8 @@ async function migratePosts() {
 
   for (let i = 0; i < entries.length; i++) {
     const e = entries[i];
-    const slug = e.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 96);
 
-    const existing = await client.fetch(`*[_type == "post" && slug.current == $slug][0]._id`, { slug });
+    const existing = await client.fetch(`*[_type == "post" && title == $title][0]._id`, { title: e.title });
     if (existing) {
       console.log(`  SKIP [${i + 1}/${entries.length}]: "${e.title}" (already exists)`);
       continue;
@@ -192,10 +187,7 @@ async function migratePosts() {
       await client.create({
         _type: "post",
         title: e.title,
-        slug: { _type: "slug", current: slug },
         body: blocks,
-        year: e.year,
-        excerpt: extractExcerpt(e.body),
         publishedAt: e.year
           ? new Date(e.year, 0, 1).toISOString()
           : new Date().toISOString(),
@@ -213,11 +205,6 @@ function extractYear(text: string): number | null {
   return matches ? parseInt(matches[1]) : null;
 }
 
-function extractExcerpt(html: string): string {
-  const doc = new JSDOM(html).window.document;
-  const text = doc.body?.textContent || "";
-  return text.slice(0, 300).trim();
-}
 
 async function migrateSeasons() {
   console.log("\n=== MIGRATING SEASONS ===");
@@ -348,7 +335,10 @@ async function migrateVideos() {
   }
 
   for (const id of youtubeIds) {
-    const existing = await client.fetch(`*[_type == "video" && youtubeId == $id][0]._id`, { id });
+    const url = `https://www.youtube.com/watch?v=${id}`;
+    const existing = await client.fetch(`*[_type == "video" && youtubeUrl == $url][0]._id`, {
+      url,
+    });
     if (existing) {
       console.log(`  SKIP: ${id}`);
       continue;
@@ -356,8 +346,7 @@ async function migrateVideos() {
     await client.create({
       _type: "video",
       title: `Video ${id}`,
-      youtubeId: id,
-      description: "",
+      youtubeUrl: url,
       category: "Sport Prototipo",
     });
     console.log(`  OK: ${id}`);

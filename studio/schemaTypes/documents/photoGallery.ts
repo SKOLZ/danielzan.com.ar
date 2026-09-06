@@ -20,6 +20,13 @@ export const photoGallery = defineType({
         defineArrayMember({
           type: "image",
           options: { hotspot: true },
+          fields: [
+            defineField({
+              name: "title",
+              title: "Título",
+              type: "string",
+            }),
+          ],
         }),
       ],
       components: {

@@ -1,4 +1,5 @@
 import { defineType, defineField } from "sanity";
+import { extractYouTubeId } from "../../lib/youtube";
 
 export const video = defineType({
   name: "video",
@@ -12,15 +13,18 @@ export const video = defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
-      name: "youtubeId",
-      title: "ID de YouTube",
+      name: "youtubeUrl",
+      title: "URL de YouTube",
       type: "string",
-      validation: (rule) => rule.required(),
-    }),
-    defineField({
-      name: "description",
-      title: "Descripción",
-      type: "text",
+      description:
+        "Pegá el enlace del video: https://www.youtube.com/watch?v=…, https://youtu.be/…, /embed/…, /shorts/… o /live/…",
+      validation: (rule) =>
+        rule.required().custom((value) => {
+          if (typeof value !== "string" || !value.trim()) return true;
+          return extractYouTubeId(value)
+            ? true
+            : "Ingresá una URL de YouTube válida (youtube.com/watch, youtu.be, /embed, /shorts o /live).";
+        }),
     }),
     defineField({
       name: "category",

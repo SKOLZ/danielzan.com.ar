@@ -1,6 +1,7 @@
 ---
 import { slugify } from "../lib/slugify";
 import { positionClass } from "../lib/positions";
+import Pagination from "./Pagination.astro";
 
 export interface ResultItem {
   date: string;
@@ -124,18 +125,20 @@ const resultClass = (pos: string) => {
   </tbody>
 </table>
 
-<div class="pagination" id="results-pager"></div>
+<Pagination id="results-pager" />
 
 <script>
+  import { setupPager, pageUrl, revealInitialContent } from "../scripts/pagination";
+
   document.addEventListener("astro:page-load", () => {
     const body = document.getElementById("results-body");
-    if (!body) return;
+    const pagerEl = document.getElementById("results-pager");
+    if (!body || !pagerEl) return;
 
     const PAGE_SIZE = 30;
 
     const rows = Array.from(body.querySelectorAll("tr[data-category]"));
     const filterBar = document.querySelector(".filter-bar");
-    const pagerEl = document.getElementById("results-pager");
     const titleEl = document.getElementById("resultados");
 
     const filterBtns = Array.from(
@@ -152,12 +155,10 @@ const resultClass = (pos: string) => {
       Array.from(slugToName, ([s, n]) => [n, s]),
     );
 
-    const readParams = () => {
+    const readCatName = () => {
       const p = new URLSearchParams(location.search);
       const catSlug = (p.get("categoria") ?? "").toLowerCase();
-      const catName = slugToName.get(catSlug) ?? "";
-      const page = Number.parseInt(p.get("page") ?? "1", 10);
-      return { catName, page: Number.isFinite(page) && page >= 1 ? page : 1 };
+      return slugToName.get(catSlug) ?? "";
     };
 
     const countFor = (catName: string) =>
@@ -171,78 +172,25 @@ const resultClass = (pos: string) => {
     const buildUrl = (catSlug: string, page: number) => {
       const p = new URLSearchParams();
       if (catSlug) p.set("categoria", catSlug);
-      if (page > 1) p.set("page", String(page));
-      const qs = p.toString();
-      return qs ? `/resultados?${qs}` : "/resultados";
+      return pageUrl("/resultados", page, p);
     };
 
-    const pagerItems = (current: number, total: number): (number | "…")[] => {
-      if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-      const items: (number | "…")[] = [1];
-      const start = Math.max(2, current - 1);
-      const end = Math.min(total - 1, current + 1);
-      if (start > 2) items.push("…");
-      for (let i = start; i <= end; i++) items.push(i);
-      if (end < total - 1) items.push("…");
-      items.push(total);
-      return items;
-    };
-
-    const renderPager = (current: number, total: number, catSlug: string) => {
-      if (!pagerEl) return;
-      if (total <= 1) {
-        pagerEl.style.display = "none";
-        pagerEl.innerHTML = "";
-        return;
-      }
-      pagerEl.style.display = "";
-
-    const link = (
-      page: number,
-      cls: string,
-      label: string,
-      disabled: boolean,
-      ariaLabel?: string,
-    ) =>
-      `<a href="${buildUrl(catSlug, page)}" data-page="${page}" class="${cls}"${ariaLabel ? ` aria-label="${ariaLabel}"` : ""}${disabled ? ' aria-disabled="true"' : ""}>${label}</a>`;
-
-    const chevronLeft =
-      '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>';
-    const chevronRight =
-      '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>';
-
-    const prev = link(
-      Math.max(1, current - 1),
-      current <= 1 ? "page-nav is-disabled" : "page-nav",
-      chevronLeft,
-      current <= 1,
-      "Anterior",
-    );
-    const next = link(
-      Math.min(total, current + 1),
-      current >= total ? "page-nav is-disabled" : "page-nav",
-      chevronRight,
-      current >= total,
-      "Siguiente",
-    );
-
-      const nums = pagerItems(current, total)
-        .map((p) =>
-          p === "…"
-            ? `<span class="ellipsis">…</span>`
-            : p === current
-              ? `<span class="current">${p}</span>`
-              : link(p, "page-num", String(p), false),
-        )
-        .join("");
-
-      pagerEl.innerHTML = prev + nums + next;
-    };
+    const pager = setupPager(pagerEl, {
+      getTotal: () => totalPagesFor(readCatName()),
+      buildUrl: (page) => buildUrl(nameToSlug.get(readCatName()) ?? "", page),
+      navigate: (page, push) => {
+        const catSlug = nameToSlug.get(readCatName()) ?? "";
+        if (push) {
+          history.pushState({}, "", buildUrl(catSlug, page));
+          titleEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        applyView();
+      },
+    });
 
     const applyView = () => {
-      const { catName, page } = readParams();
-      const total = totalPagesFor(catName);
-      const cur = Math.min(page, total);
+      const catName = readCatName();
+      const cur = pager.page();
       const activeSlug = nameToSlug.get(catName) ?? "";
 
       let visible = 0;
@@ -265,7 +213,7 @@ const resultClass = (pos: string) => {
         btn.classList.toggle("active", (btn.dataset.filter ?? "") === activeSlug);
       }
 
-      renderPager(cur, total, activeSlug);
+      pager.render();
     };
 
     const navigate = (catSlug: string, page: number) => {
@@ -281,25 +229,7 @@ const resultClass = (pos: string) => {
       navigate(a.dataset.filter ?? "", 1);
     });
 
-    pagerEl?.addEventListener("click", (e) => {
-      const a = (e.target as HTMLElement).closest("a[data-page]");
-      if (!a) return;
-      e.preventDefault();
-      if (
-        a.classList.contains("is-disabled") ||
-        a.getAttribute("aria-disabled") === "true"
-      )
-        return;
-      const page = Number.parseInt(a.dataset.page ?? "1", 10);
-      const { catName } = readParams();
-      navigate(nameToSlug.get(catName) ?? "", page);
-    });
-
-    if (!window.__dzResultsBound) {
-      window.addEventListener("popstate", applyView);
-      window.__dzResultsBound = true;
-    }
-
     applyView();
+    revealInitialContent();
   });
 </script>

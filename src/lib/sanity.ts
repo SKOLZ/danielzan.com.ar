@@ -9,38 +9,17 @@ export function urlFor(source: unknown) {
 }
 
 export const POSTS_QUERY = defineQuery(`
-  *[_type == "post" && defined(slug.current)] | order(publishedAt desc) [$start...$end] {
+  *[_type == "post"] | order(publishedAt desc) [$start...$end] {
     _id,
     title,
-    slug,
     publishedAt,
-    excerpt,
-    year,
     "category": category->title,
     body,
-    mainImage {
-      asset->{ _id, url, metadata { lqip, dimensions } }
-    }
   }
 `);
 
 export const POSTS_COUNT_QUERY = defineQuery(`
-  count(*[_type == "post" && defined(slug.current)])
-`);
-
-export const POST_QUERY = defineQuery(`
-  *[_type == "post" && slug.current == $slug][0] {
-    _id,
-    title,
-    publishedAt,
-    body,
-    excerpt,
-    year,
-    "category": category->title,
-    mainImage {
-      asset->{ _id, url, metadata { lqip, dimensions } }
-    }
-  }
+  count(*[_type == "post"])
 `);
 
 export const SEASONS_QUERY = defineQuery(`
@@ -76,6 +55,7 @@ export const PHOTO_GALLERIES_QUERY = defineQuery(`
     "category": category->title,
     photos[] {
       _key,
+      title,
       asset
     }
   }
@@ -85,8 +65,7 @@ export const VIDEOS_QUERY = defineQuery(`
   *[_type == "video"] | order(_createdAt desc) {
     _id,
     title,
-    youtubeId,
-    description,
+    youtubeUrl,
     "category": category->title
   }
 `);

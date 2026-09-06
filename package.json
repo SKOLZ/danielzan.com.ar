@@ -13,8 +13,8 @@
     "migrate": "npx tsx scripts/migrate.ts",
     "studio:dev": "pnpm --filter danielzan-studio dev",
     "studio:build": "pnpm --filter danielzan-studio build",
-    "studio:deploy": "pnpm --filter danielzan-studio deploy",
-    "studio:schema:deploy": "pnpm --filter danielzan-studio schema:deploy"
+    "studio:deploy": "pnpm --filter danielzan-studio run deploy",
+    "studio:schema:deploy": "pnpm --filter danielzan-studio run schema:deploy"
   },
   "dependencies": {
     "@sanity/astro": "^3.5.0",

@@ -9,6 +9,7 @@ interface PhotoItem {
   _type: "image";
   _key: string;
   asset: { _type: "reference"; _ref: string };
+  title?: string;
 }
 
 interface Asset {
