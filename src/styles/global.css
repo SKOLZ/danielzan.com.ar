@@ -1038,12 +1038,23 @@ html.has-search-params .media-grid {
 }
 
 .media-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: 16/9;
   background: var(--asphalt-light);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
   overflow: hidden;
   transition: background 150ms ease, border-color 200ms ease;
   cursor: pointer;
+}
+
+.media-card[hidden] {
+  display: none;
+}
+
+.media-empty[hidden] {
+  display: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -1059,10 +1070,13 @@ html.has-search-params .media-grid {
 .media-card-thumb {
   overflow: hidden;
   display: block;
+  position: absolute;
+  inset: 0;
 }
 
 .media-card-thumb img {
   width: 100%;
+  height: 100%;
   aspect-ratio: 16/9;
   object-fit: cover;
   display: block;
@@ -1070,13 +1084,22 @@ html.has-search-params .media-grid {
 }
 
 .media-card .video-thumb {
+  position: absolute;
+  inset: 0;
   width: 100%;
+  height: 100%;
   aspect-ratio: 16/9;
   object-fit: cover;
 }
 
 .media-card-body {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
   padding: 0.4rem 0.65rem 0.5rem;
+  background: var(--asphalt-light);
 }
 
 .media-card-body.no-title {
