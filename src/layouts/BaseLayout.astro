@@ -1,0 +1,165 @@
+---
+import { ClientRouter } from "astro:transitions";
+import "../styles/global.css";
+import Player from "../components/Player.astro";
+
+export interface Props {
+  title?: string;
+  description?: string;
+  activePage?: string;
+}
+
+const {
+  title = "Danielzan",
+  description = "Historia del piloto Daniel Zanzotti - Sport Prototipo",
+  activePage = "",
+} = Astro.props;
+
+const navItems = [
+  { href: "/", label: "Inicio", id: "home" },
+  { href: "/about", label: "Sobre mí", id: "about" },
+  { href: "/media", label: "Media", id: "media" },
+  { href: "/resultados", label: "Resultados", id: "resultados" },
+];
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script is:inline>
+      if (location.search) {
+        document.documentElement.classList.add("has-search-params");
+      }
+    </script>
+    <title>{title} | Danielzan</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={`${title} | Danielzan`} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/images/og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={`${title} | Danielzan`} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content="/images/og.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Oswald:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <ClientRouter />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container header-container">
+        <div class="header-inner">
+          <a href="/" class="header-title">
+            Daniel<span>zan</span>
+          </a>
+          <button
+            type="button"
+            class="nav-toggle"
+            id="nav-toggle"
+            aria-expanded="false"
+            aria-controls="site-nav"
+            aria-label="Abrir menú"
+          >
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+          </button>
+        </div>
+        <nav class="nav" id="site-nav">
+          {
+            navItems.map((item) => (
+              <a
+                href={item.href}
+                class={activePage === item.id ? "active" : ""}
+              >
+                {item.label}
+              </a>
+            ))
+          }
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <div class="footer-section">
+          <span class="footer-text">
+            &copy; {new Date().getFullYear()} Daniel Zanzotti
+          </span>
+        </div>
+        <div class="footer-section">
+          <span class="footer-text">
+            Creado con ☕ y 🤖 por <a
+              href="https://skolz.dev.ar"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="footer-link">SKOLZ</a
+            >
+          </span>
+        </div>
+      </div>
+    </footer>
+
+    <Player />
+  </body>
+</html>
+
+<script>
+  const closeNav = () => {
+    const toggle = document.getElementById("nav-toggle");
+    const nav = document.getElementById("site-nav");
+    if (!toggle || !nav) return;
+    nav.classList.remove("open");
+    toggle.classList.remove("open");
+    toggle.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("nav-open");
+  };
+
+  if (!window.__dzNavInit) {
+    window.__dzNavInit = true;
+
+    document.addEventListener("click", (e) => {
+      const navEl = document.getElementById("site-nav");
+      const toggleEl = document.getElementById("nav-toggle");
+      if (!navEl || !toggleEl) return;
+      if (e.target.closest("#nav-toggle")) {
+        const open = !navEl.classList.contains("open");
+        navEl.classList.toggle("open", open);
+        toggleEl.classList.toggle("open", open);
+        toggleEl.setAttribute("aria-expanded", String(open));
+        document.body.classList.toggle("nav-open", open);
+      } else if (
+        !e.target.closest("#site-nav") &&
+        navEl.classList.contains("open")
+      ) {
+        closeNav();
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (
+        e.key === "Escape" &&
+        document.getElementById("site-nav")?.classList.contains("open")
+      ) {
+        closeNav();
+      }
+    });
+  }
+
+  document.addEventListener("astro:page-load", closeNav);
+</script>

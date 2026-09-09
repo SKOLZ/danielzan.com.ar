@@ -1,0 +1,262 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { sanityClient } from "sanity:client";
+import { PortableText } from "astro-portabletext";
+import PortableImage from "../components/PortableImage.astro";
+import Gallery from "../components/Gallery.astro";
+import Pagination from "../components/Pagination.astro";
+import { POSTS_QUERY, POSTS_COUNT_QUERY, SEASONS_QUERY, RECENT_RESULTS_QUERY, SONGS_QUERY, TEAM_QUERY, SPONSORS_QUERY, urlFor } from "../lib/sanity";
+import { positionClass } from "../lib/positions";
+
+function groupImages(body: any[]): any[] {
+  const result: any[] = [];
+  let buffer: any[] = [];
+  for (const block of body) {
+    if (block._type === "image") {
+      buffer.push(block);
+    } else {
+      if (buffer.length === 1) {
+        result.push(buffer[0]);
+      } else if (buffer.length > 1) {
+        result.push({ _type: "gallery", images: buffer });
+      }
+      buffer = [];
+      result.push(block);
+    }
+  }
+  if (buffer.length === 1) {
+    result.push(buffer[0]);
+  } else if (buffer.length > 1) {
+    result.push({ _type: "gallery", images: buffer });
+  }
+  return result;
+}
+
+const perPage = 5;
+const [allPosts, totalPosts, seasons, recentResults, songs, teams, sponsors] = await Promise.all([
+  sanityClient.fetch(POSTS_QUERY, { start: 0, end: 999 }),
+  sanityClient.fetch(POSTS_COUNT_QUERY),
+  sanityClient.fetch(SEASONS_QUERY),
+  sanityClient.fetch(RECENT_RESULTS_QUERY),
+  sanityClient.fetch(SONGS_QUERY),
+  sanityClient.fetch(TEAM_QUERY),
+  sanityClient.fetch(SPONSORS_QUERY),
+]);
+const totalPages = Math.ceil(totalPosts / perPage);
+
+const teamsWithLogos = teams.filter((t) => t.logo?.asset?.url);
+
+const resultClass = (pos: string) => {
+  const p = pos.toLowerCase().trim();
+  if (p === "1ro" || p === "1°" || p === "1" || p === "1st" || p === "first") return "gold";
+  if (p === "2do" || p === "2°" || p === "2" || p === "2nd" || p === "second" || p.includes("2do")) return "silver";
+  if (p === "3ro" || p === "3°" || p === "3" || p === "3rd" || p === "third" || p.includes("3ro")) return "bronze";
+  return "";
+};
+
+const formatDate = (d: string) => {
+  if (!d) return "";
+  const parts = d.split("-");
+  if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+  return d;
+};
+
+const formatPostDate = (d: string) => {
+  if (!d) return "";
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return d;
+  const dd = String(dt.getUTCDate()).padStart(2, "0");
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+  return `${dd}.${mm}.${dt.getUTCFullYear()}`;
+};
+
+const trophyIcon = (pos: string) => {
+  const cls = positionClass(pos);
+  return cls ? `/images/trophy-${cls}.svg` : "";
+};
+---
+<BaseLayout title="Inicio" description="Historia del piloto Daniel Zanzotti - Sport Prototipo" activePage="home">
+  <div class="container main-grid">
+    <div class="content">
+      <div id="posts-container">
+        {allPosts.map((post, i) => (
+          <article class="post-card" data-page={Math.floor(i / perPage) + 1} style={i >= perPage ? "display: none;" : ""}>
+            <div class="post-heading">
+              <h2>{post.title}</h2>
+              {post.publishedAt && <span class="post-date">{formatPostDate(post.publishedAt)}</span>}
+            </div>
+            {post.category && (
+              <div class="post-meta">
+                <span>{post.category}</span>
+              </div>
+            )}
+            {post.body && post.body.length > 0 && (
+              <div class="post-body">
+                <PortableText
+                  value={groupImages(post.body)}
+                  components={{
+                    type: {
+                      image: PortableImage,
+                      gallery: Gallery,
+                    },
+                  }}
+                />
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+
+      {totalPages > 1 && <Pagination />}
+    </div>
+
+    <aside class="sidebar">
+        <div class="sidebar-group">
+          <h2>Temporadas</h2>
+          <div class="sidebar-content">
+            {seasons.map((s) => (
+              <div class="season-item">
+                <span class="season-badge">
+                  {trophyIcon(s.finalPosition) && <img src={trophyIcon(s.finalPosition)} alt={s.finalPosition} width="20" height="20" />}
+                </span>
+                <span class="season-year">{s.year}</span>
+                <span class={`season-pos ${positionClass(s.finalPosition)}`} style={positionClass(s.finalPosition) ? `color: var(--${positionClass(s.finalPosition)})` : ""}>
+                  {s.finalPosition}
+                </span>
+                <span class="season-cat">{s.category}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div class="sidebar-group">
+          <h2>Últimos resultados</h2>
+          <div class="sidebar-content">
+            {recentResults.map((r) => (
+              <div class="result-item">
+                <span class={`result-pos ${resultClass(r.position)}`}>{r.position}</span>
+                <span class="result-date">{formatDate(r.date)}</span>
+              </div>
+            ))}
+            <a href="/resultados" class="sidebar-link">Ver todos →</a>
+          </div>
+        </div>
+
+        {teamsWithLogos.length > 0 && (
+          <div class="sidebar-group">
+            <h2>Equipo</h2>
+            <div class="sidebar-content">
+              <div class="logo-row">
+                {teamsWithLogos.map((t) =>
+                  t.url ? (
+                    <a href={t.url} target="_blank" rel="noopener" title={t.name}>
+                      <img src={t.logo.asset.url} alt={t.name} class="sidebar-logo" />
+                    </a>
+                  ) : (
+                    <img src={t.logo.asset.url} alt={t.name} class="sidebar-logo" />
+                  )
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {sponsors.some((s) => s.logo?.asset?.url) && (
+          <div class="sidebar-group">
+            <h2>Auspiciantes</h2>
+            <div class="sidebar-content">
+              <div class="logo-row">
+                {sponsors.map((s) =>
+                  s.logo?.asset?.url ? (
+                    s.url ? (
+                      <a href={s.url} target="_blank" rel="noopener" title={s.name}>
+                        <img src={s.logo.asset.url} alt={s.name} class="sidebar-logo" />
+                      </a>
+                    ) : (
+                      <img src={s.logo.asset.url} alt={s.name} class="sidebar-logo" />
+                    )
+                  ) : null
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {songs.length > 0 && (
+          <div class="sidebar-group">
+            <h2>Playlist</h2>
+            <div class="sidebar-content">
+              {songs.some((s) => s.audio?.asset?.url) ? (
+                <div class="playlist">
+                  {songs.map((song, i) => (
+                    <button type="button" class={`playlist-item${song.audio?.asset?.url ? "" : " is-disabled"}`} data-url={song.audio?.asset?.url ?? ""}><span class="playlist-num">{String(i + 1).padStart(2, "0")}.</span><span class="playlist-title">{song.title}</span>{song.audio?.asset?.url ? <span class="playlist-num playlist-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20m-2 6l7 4-7 4z" /></svg></span> : null}</button>
+                  ))}
+                </div>
+              ) : (
+                <span class="playlist-empty">{songs.map((s) => s.title).join(" · ")}</span>
+              )}
+            </div>
+          </div>
+        )}
+    </aside>
+  </div>
+</BaseLayout>
+
+<script>
+  import { setupPager, pageUrl, revealInitialContent } from "../scripts/pagination";
+
+  document.addEventListener('astro:page-load', () => {
+    const posts = document.querySelectorAll('[data-page]');
+    const pagerEl = document.getElementById('pagination');
+
+    if (posts.length && pagerEl) {
+      const totalPages = Math.max(
+        1,
+        ...Array.from(posts, (p) => parseInt(p.dataset.page, 10)),
+      );
+
+      function showPage(page) {
+        posts.forEach(p => {
+          p.style.display = parseInt(p.dataset.page, 10) === page ? '' : 'none';
+        });
+        pager.render();
+      }
+
+      const pager = setupPager(pagerEl, {
+        getTotal: () => totalPages,
+        buildUrl: (page) => pageUrl(window.location.pathname, page),
+        navigate: (page, pushUrl) => {
+          if (pushUrl) {
+            history.pushState({}, '', pageUrl(window.location.pathname, page));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+          showPage(page);
+        },
+      });
+
+      showPage(pager.page());
+    }
+
+    revealInitialContent();
+
+    const playlistButtons = Array.from(document.querySelectorAll('.playlist-item'));
+
+    const playable = playlistButtons.filter((btn) => btn.dataset.url);
+
+    playlistButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (!btn.dataset.url) return;
+        const index = playable.indexOf(btn);
+        window.dispatchEvent(new CustomEvent('player:play', {
+          detail: {
+            index,
+            list: playable.map((b) => ({
+              title: b.querySelector('.playlist-title')?.textContent?.trim() || '',
+              url: b.dataset.url,
+            })),
+          },
+        }));
+      });
+    });
+  });
+</script>

@@ -1,0 +1,25 @@
+{
+  "name": "danielzan-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "sanity dev",
+    "build": "sanity build",
+    "start": "sanity start",
+    "deploy": "sanity deploy",
+    "schema:deploy": "sanity schema deploy"
+  },
+  "dependencies": {
+    "@sanity/icons": "^5.2.1",
+    "@sanity/locale-es-es": "^1.2.38",
+    "@sanity/orderable-document-list": "^2.0.18",
+    "@sanity/ui": "^3.5.1",
+    "@sanity/vision": "^6.8.0",
+    "sanity": "^6.8.0",
+    "styled-components": "^6.4.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,0 +1,258 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { sanityClient } from "sanity:client";
+import { extractYouTubeId } from "../lib/youtube";
+import { PHOTO_GALLERIES_QUERY, VIDEOS_QUERY, urlFor } from "../lib/sanity";
+
+const [galleries, videos] = await Promise.all([
+  sanityClient.fetch(PHOTO_GALLERIES_QUERY),
+  sanityClient.fetch(VIDEOS_QUERY),
+]);
+
+const videosWithId = videos
+  .map((v) => ({ ...v, videoId: extractYouTubeId(v.youtubeUrl ?? "") ?? "" }))
+  .filter((v) => v.videoId !== "");
+
+const photos = galleries.flatMap((g) =>
+  (g.photos || []).map((p) => ({
+    ...p,
+    photoTitle: p.title,
+    galleryTitle: g.title,
+    category: g.category,
+  }))
+);
+
+const categories = [...new Set([...photos, ...videos].map((c) => c.category).filter(Boolean))];
+
+const lightboxItems = [
+  ...photos.filter((p) => p.asset?._ref).map((p) => ({
+    type: "image",
+    src: urlFor(p).width(1600).url(),
+    alt: p.photoTitle || p.galleryTitle,
+  })),
+  ...videosWithId.map((v) => ({
+    type: "video",
+    youtubeId: v.videoId,
+  })),
+];
+---
+<BaseLayout title="Media" description="Fotos, videos y canciones de Daniel Zanzotti" activePage="media">
+  <div class="container" style="padding-top: 2rem; padding-bottom: 2rem;">
+    <h1 class="page-title">Media</h1>
+
+    <div class="filter-bar page-filters">
+      <div class="filter-group">
+        <label for="type-filter" class="filter-label">Tipo de media</label>
+        <select id="type-filter" class="filter-select">
+          <option value="">Todas</option>
+          <option value="fotos">Fotos</option>
+          <option value="videos">Videos</option>
+        </select>
+      </div>
+      {categories.length > 0 && (
+        <div class="filter-group">
+          <label for="category-filter" class="filter-label">Categoría</label>
+          <select id="category-filter" class="filter-select">
+            <option value="">Todas</option>
+            {categories.map((cat) => (
+              <option value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+      )}
+    </div>
+
+    <div class="media-grid">
+      {photos.map((photo, i) => (
+        <div class="media-card" data-type="fotos" data-category={photo.category || ""} data-index={i} role="button" tabindex="0">
+          {photo.asset?._ref && (
+            <span class="media-card-thumb">
+              <img src={urlFor(photo).width(400).height(225).url()} alt={photo.galleryTitle} loading="lazy" />
+            </span>
+          )}
+          <div class={`media-card-body${photo.photoTitle ? "" : " no-title"}`}>
+            <span class="category-tag">{photo.category || "General"}</span>
+            {photo.photoTitle && <h3 title={photo.photoTitle}>{photo.photoTitle}</h3>}
+          </div>
+        </div>
+      ))}
+      {videosWithId.map((video, i) => (
+        <div class="media-card" data-type="videos" data-category={video.category || ""} data-index={photos.length + i} role="button" tabindex="0">
+          <span class="media-card-thumb video-thumb">
+            <img src={`https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`} alt={video.title} loading="lazy" />
+          </span>
+          <div class={`media-card-body${video.title ? "" : " no-title"}`}>
+            <span class="category-tag">{video.category || "General"}</span>
+            {video.title && <h3 title={video.title}>{video.title}</h3>}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <p class="media-empty" hidden>No hay contenido para ese filtro.</p>
+  </div>
+</BaseLayout>
+
+<div id="lightbox" class="lightbox" hidden>
+  <button class="lightbox-close" aria-label="Cerrar">&times;</button>
+  <div class="lightbox-content">
+    <button class="lightbox-arrow lightbox-prev" aria-label="Anterior">&#8249;</button>
+    <div id="lightbox-body"></div>
+    <button class="lightbox-arrow lightbox-next" aria-label="Siguiente">&#8250;</button>
+  </div>
+  <div id="lightbox-counter" class="lightbox-counter"></div>
+</div>
+
+<script is:inline set:html={`window.__lightboxItems = ${JSON.stringify(lightboxItems)};`} />
+
+<script>
+  import { revealInitialContent } from "../scripts/pagination";
+
+  function applyMediaFilter() {
+    const typeFilter = document.getElementById("type-filter");
+    const categoryFilter = document.getElementById("category-filter");
+    if (!typeFilter || !categoryFilter) return;
+    const tipo = typeFilter.value;
+    const cat = categoryFilter.value;
+    const cards = document.querySelectorAll(".media-card");
+    let visible = 0;
+    for (const card of cards) {
+      const show =
+        (!tipo || card.dataset.type === tipo) &&
+        (!cat || card.dataset.category === cat);
+      card.hidden = !show;
+      if (show) visible++;
+    }
+    const empty = document.querySelector(".media-empty");
+    if (empty) empty.hidden = visible > 0;
+  }
+
+  function getVisibleItems() {
+    const cards = document.querySelectorAll(".media-card");
+    const items = window.__lightboxItems || [];
+    const visible: number[] = [];
+    cards.forEach((card, i) => {
+      if (!card.hidden) visible.push(i);
+    });
+    return visible;
+  }
+
+  function openLightbox(globalIndex: number) {
+    const lightbox = document.getElementById("lightbox");
+    const body = document.getElementById("lightbox-body");
+    const counter = document.getElementById("lightbox-counter");
+    if (!lightbox || !body || !counter) return;
+
+    const items = window.__lightboxItems || [];
+    if (!items.length) return;
+
+    const visible = getVisibleItems();
+    const posInVisible = visible.indexOf(globalIndex);
+    if (posInVisible === -1) return;
+
+    lightbox.dataset.pos = String(posInVisible);
+    showLightboxItem(posInVisible, visible, items, body, counter);
+    lightbox.hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+
+  function showLightboxItem(
+    posInVisible: number,
+    visible: number[],
+    items: any[],
+    body: HTMLElement,
+    counter: HTMLElement
+  ) {
+    const globalIndex = visible[posInVisible];
+    const item = items[globalIndex];
+    if (!item) return;
+
+    if (item.type === "image") {
+      body.innerHTML = `<img src="${item.src}" alt="${item.alt || ""}" />`;
+    } else {
+      body.innerHTML = `<iframe src="https://www.youtube.com/embed/${item.youtubeId}?autoplay=1&playsinline=1&muted=1&rel=0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+    }
+
+    counter.textContent = `${posInVisible + 1} / ${visible.length}`;
+  }
+
+  function closeLightbox() {
+    const lightbox = document.getElementById("lightbox");
+    const body = document.getElementById("lightbox-body");
+    if (lightbox) lightbox.hidden = true;
+    if (body) body.innerHTML = "";
+    document.body.style.overflow = "";
+  }
+
+  function navigateLightbox(direction: number) {
+    const lightbox = document.getElementById("lightbox");
+    const body = document.getElementById("lightbox-body");
+    const counter = document.getElementById("lightbox-counter");
+    if (!lightbox || !body || !counter) return;
+
+    const items = window.__lightboxItems || [];
+    const visible = getVisibleItems();
+    let pos = Number(lightbox.dataset.pos || 0);
+    pos = (pos + direction + visible.length) % visible.length;
+    lightbox.dataset.pos = String(pos);
+    showLightboxItem(pos, visible, items, body, counter);
+  }
+
+  document.addEventListener("astro:page-load", () => {
+    const typeFilter = document.getElementById("type-filter");
+    const categoryFilter = document.getElementById("category-filter");
+    if (!typeFilter || !categoryFilter) return;
+
+    const onSelect = (key: string) => (el: HTMLSelectElement) => {
+      const url = new URL(window.location.href);
+      if (el.value) url.searchParams.set(key, el.value);
+      else url.searchParams.delete(key);
+      history.pushState({}, "", url.pathname + url.search);
+      applyMediaFilter();
+    };
+
+    typeFilter.addEventListener("change", () => onSelect("tipo")(typeFilter));
+    categoryFilter.addEventListener("change", () => onSelect("categoria")(categoryFilter));
+
+    const params = new URLSearchParams(window.location.search);
+    typeFilter.value = params.get("tipo") || "";
+    categoryFilter.value = params.get("categoria") || "";
+    applyMediaFilter();
+    revealInitialContent();
+
+    document.querySelectorAll<HTMLElement>(".media-card[data-index]").forEach((card) => {
+      const handler = () => {
+        const idx = Number(card.dataset.index);
+        if (!card.hidden) openLightbox(idx);
+      };
+      card.addEventListener("click", handler);
+      card.addEventListener("keydown", (e: KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handler();
+        }
+      });
+    });
+
+    document.querySelector(".lightbox-close")?.addEventListener("click", closeLightbox);
+    document.querySelector(".lightbox-prev")?.addEventListener("click", () => navigateLightbox(-1));
+    document.querySelector(".lightbox-next")?.addEventListener("click", () => navigateLightbox(1));
+
+    document.getElementById("lightbox")?.addEventListener("click", (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target.id === "lightbox" || target.classList.contains("lightbox-content")) {
+        closeLightbox();
+      }
+    });
+
+    document.addEventListener("keydown", (e: KeyboardEvent) => {
+      const lightbox = document.getElementById("lightbox");
+      if (lightbox?.hidden) return;
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") navigateLightbox(-1);
+      if (e.key === "ArrowRight") navigateLightbox(1);
+    });
+  });
+
+  window.addEventListener("popstate", applyMediaFilter);
+</script>

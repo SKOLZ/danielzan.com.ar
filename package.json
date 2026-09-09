@@ -1,0 +1,34 @@
+{
+  "name": "danielzan.com.ar",
+  "type": "module",
+  "version": "0.0.1",
+  "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "migrate": "npx tsx scripts/migrate.ts",
+    "studio:dev": "pnpm --filter danielzan-studio dev",
+    "studio:build": "pnpm --filter danielzan-studio build",
+    "studio:deploy": "pnpm --filter danielzan-studio run deploy",
+    "studio:schema:deploy": "pnpm --filter danielzan-studio run schema:deploy"
+  },
+  "dependencies": {
+    "@sanity/client": "^7.24.0",
+    "astro": "^7.1.3"
+  },
+  "devDependencies": {
+    "@portabletext/block-tools": "^5.1.12",
+    "@sanity/astro": "^3.5.0",
+    "@sanity/image-url": "^2.1.1",
+    "astro-portabletext": "^0.13.0",
+    "dotenv": "^17.4.2",
+    "groq": "^6.6.0",
+    "jsdom": "^29.1.1",
+    "tsx": "^4.23.1"
+  }
+}

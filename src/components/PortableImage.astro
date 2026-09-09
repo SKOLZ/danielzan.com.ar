@@ -1,0 +1,17 @@
+---
+import { urlFor } from "../lib/sanity";
+
+export interface Props {
+  node: {
+    _type: string;
+    asset?: {
+      _ref?: string;
+    };
+  };
+}
+
+const { node } = Astro.props;
+const ref = node?.asset?._ref;
+const src = ref ? urlFor({ asset: { _ref: ref } }).width(600).url() : "";
+---
+{src && <img src={src} alt="" class="inline-image" />}

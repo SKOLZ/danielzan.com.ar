@@ -1,0 +1,235 @@
+---
+import { slugify } from "../lib/slugify";
+import { positionClass } from "../lib/positions";
+import Pagination from "./Pagination.astro";
+
+export interface ResultItem {
+  date: string;
+  position: string;
+  category: string;
+}
+
+export interface SeasonItem {
+  year: string;
+  finalPosition: string;
+  category: string;
+}
+
+interface Props {
+  seasons: SeasonItem[];
+  categories: string[];
+  results: ResultItem[];
+}
+
+const { seasons, categories, results } = Astro.props;
+
+const formatDate = (d: string) => {
+  if (!d) return "";
+  const parts = d.split("-");
+  if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+  return d;
+};
+
+const resultClass = (pos: string) => {
+  const p = pos.toLowerCase().trim();
+  if (p === "1ro" || p === "1°" || p === "1" || p.startsWith("1"))
+    return "gold";
+  if (p === "2do" || p === "2°" || p === "2" || p.startsWith("2"))
+    return "silver";
+  if (p === "3ro" || p === "3°" || p === "3" || p.startsWith("3"))
+    return "bronze";
+  return "";
+};
+---
+
+<table class="seasons-table">
+  <thead>
+    <tr>
+      <th>Año</th>
+      <th>Posición</th>
+      <th>Categoría</th>
+    </tr>
+  </thead>
+  <tbody>
+    {
+      seasons.map((s) => (
+        <tr>
+          <td style="font-family: var(--font-mono); font-weight: 700; color: var(--white);">
+            {s.year}
+          </td>
+          <td style={positionClass(s.finalPosition) ? `color: var(--${positionClass(s.finalPosition)});` : ""}>
+            {s.finalPosition}
+          </td>
+          <td style="color: var(--muted);">{s.category}</td>
+        </tr>
+      ))
+    }
+  </tbody>
+</table>
+
+<h2 class="page-title results-title" id="resultados">Todos los resultados</h2>
+
+{
+  categories.length > 0 && (
+    <div class="filter-bar">
+      <span class="filter-label">Categorías</span>
+      <a href="/resultados" class="filter-btn" data-filter="">
+        Todas
+      </a>
+      {categories.map((cat) => (
+        <a
+          href={`/resultados?categoria=${slugify(cat)}`}
+          class="filter-btn"
+          data-filter={slugify(cat)}
+          data-name={cat}
+        >
+          {cat}
+        </a>
+      ))}
+    </div>
+  )
+}
+
+<table class="results-table">
+  <thead>
+    <tr>
+      <th>Fecha</th>
+      <th>Posición</th>
+      <th>Categoría</th>
+    </tr>
+  </thead>
+  <tbody id="results-body">
+    {
+      results.length === 0 && (
+        <tr id="results-empty">
+          <td
+            colspan="3"
+            style="text-align: center; color: var(--muted); padding: 2rem;"
+          >
+            Sin resultados para mostrar.
+          </td>
+        </tr>
+      )
+    }
+    {
+      results.map((r) => (
+        <tr data-category={r.category ?? ""}>
+          <td style="color: var(--muted); font-family: var(--font-mono); white-space: nowrap;">
+            {formatDate(r.date)}
+          </td>
+          <td class={`result-pos ${resultClass(r.position)}`}>{r.position}</td>
+          <td style="color: var(--muted);">{r.category}</td>
+        </tr>
+      ))
+    }
+  </tbody>
+</table>
+
+<Pagination id="results-pager" />
+
+<script>
+  import { setupPager, pageUrl, revealInitialContent } from "../scripts/pagination";
+
+  document.addEventListener("astro:page-load", () => {
+    const body = document.getElementById("results-body");
+    const pagerEl = document.getElementById("results-pager");
+    if (!body || !pagerEl) return;
+
+    const PAGE_SIZE = 30;
+
+    const rows = Array.from(body.querySelectorAll("tr[data-category]"));
+    const filterBar = document.querySelector(".filter-bar");
+    const titleEl = document.getElementById("resultados");
+
+    const filterBtns = Array.from(
+      filterBar?.querySelectorAll(".filter-btn") ?? [],
+    );
+
+    const slugToName = new Map<string, string>();
+    for (const btn of filterBtns) {
+      const slug = btn.dataset.filter ?? "";
+      const name = btn.dataset.name ?? "";
+      if (slug && name) slugToName.set(slug, name);
+    }
+    const nameToSlug = new Map<string, string>(
+      Array.from(slugToName, ([s, n]) => [n, s]),
+    );
+
+    const readCatName = () => {
+      const p = new URLSearchParams(location.search);
+      const catSlug = (p.get("categoria") ?? "").toLowerCase();
+      return slugToName.get(catSlug) ?? "";
+    };
+
+    const countFor = (catName: string) =>
+      catName
+        ? rows.filter((r) => r.dataset.category === catName).length
+        : rows.length;
+
+    const totalPagesFor = (catName: string) =>
+      Math.max(1, Math.ceil(countFor(catName) / PAGE_SIZE));
+
+    const buildUrl = (catSlug: string, page: number) => {
+      const p = new URLSearchParams();
+      if (catSlug) p.set("categoria", catSlug);
+      return pageUrl("/resultados", page, p);
+    };
+
+    const pager = setupPager(pagerEl, {
+      getTotal: () => totalPagesFor(readCatName()),
+      buildUrl: (page) => buildUrl(nameToSlug.get(readCatName()) ?? "", page),
+      navigate: (page, push) => {
+        const catSlug = nameToSlug.get(readCatName()) ?? "";
+        if (push) {
+          history.pushState({}, "", buildUrl(catSlug, page));
+          titleEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        applyView();
+      },
+    });
+
+    const applyView = () => {
+      const catName = readCatName();
+      const cur = pager.page();
+      const activeSlug = nameToSlug.get(catName) ?? "";
+
+      let visible = 0;
+      for (const r of rows) {
+        const matches = !catName || r.dataset.category === catName;
+        if (!matches) {
+          r.style.display = "none";
+          continue;
+        }
+        const inPage =
+          visible >= (cur - 1) * PAGE_SIZE && visible < cur * PAGE_SIZE;
+        r.style.display = inPage ? "" : "none";
+        visible++;
+      }
+
+      const empty = document.getElementById("results-empty");
+      if (empty) empty.style.display = visible > 0 ? "none" : "";
+
+      for (const btn of filterBtns) {
+        btn.classList.toggle("active", (btn.dataset.filter ?? "") === activeSlug);
+      }
+
+      pager.render();
+    };
+
+    const navigate = (catSlug: string, page: number) => {
+      history.pushState({}, "", buildUrl(catSlug, page));
+      applyView();
+      titleEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    filterBar?.addEventListener("click", (e) => {
+      const a = (e.target as HTMLElement).closest("a[data-filter]");
+      if (!a) return;
+      e.preventDefault();
+      navigate(a.dataset.filter ?? "", 1);
+    });
+
+    applyView();
+    revealInitialContent();
+  });
+</script>
